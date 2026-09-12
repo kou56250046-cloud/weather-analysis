@@ -2,12 +2,24 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>天気予報の精度検証</title>
 <meta name="description" content="7つの数値予報モデルを合議し、過去の予報と実測から学習した統計補正をかけた天気予報。精度の実績を同じ画面に出す。">
+
 <meta name="color-scheme" content="light dark">
+<!-- ブラウザの枠の色。明暗それぞれの背景に合わせる -->
+<meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1a1a19" media="(prefers-color-scheme: dark)">
+
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/favicon.png" sizes="48x48" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="天気精度">
+
 <link rel="stylesheet" href="assets/style.css">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🌤</text></svg>">
 </head>
 <body>
 <div id="app">
@@ -19,5 +31,16 @@
   </noscript>
 </div>
 <script type="module" src="assets/app.js"></script>
+<script>
+// サービスワーカーの登録。オフラインでも最後に見たデータを出せるようにする。
+// file:// で開いたときは登録できないので、黙って諦める。
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch((err) => {
+      console.warn('[sw] 登録できなかった:', err.message);
+    });
+  });
+}
+</script>
 </body>
 </html>

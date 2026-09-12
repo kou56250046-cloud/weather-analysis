@@ -3,17 +3,11 @@
 // 数字の隣に必ず実績誤差を置く。「25℃」ではなく「25℃ / この先3日の実績誤差 1.1℃」。
 // 7日先の予報を1日先と同じ顔で出さないのが、この画面の一番の主張。
 import { el, fmt, fmtSigned, fmtPct, fmtDate } from './dom.js';
+import { iconForDay, describeCode } from './weather-icon.js';
 import {
   frame, yAxis, xAxisLabels, line, band, bars, niceScale, legend, crosshair, refLine,
 } from './chart-svg.js';
 
-const WMO = {
-  0: '快晴', 1: 'おおむね晴', 2: '晴時々曇', 3: '曇', 45: '霧', 48: '霧氷',
-  51: '霧雨', 53: '霧雨', 55: '強い霧雨', 61: '弱い雨', 63: '雨', 65: '強い雨',
-  66: '凍雨', 67: '強い凍雨', 71: '弱い雪', 73: '雪', 75: '強い雪', 77: '霧雪',
-  80: 'にわか雨', 81: 'にわか雨', 82: '激しいにわか雨',
-  85: 'にわか雪', 86: '強いにわか雪', 95: '雷雨', 96: '雷雨(雹)', 99: '雷雨(雹)',
-};
 
 export function renderForecast({ data, loc }) {
   const fc = data.forecast;
@@ -25,6 +19,7 @@ export function renderForecast({ data, loc }) {
 
   return [
     todayPanel(today, loc),
+    stripPanel(days),
     temperaturePanel(days),
     rainPanel(days),
     tablePanel(days),
@@ -35,6 +30,17 @@ export function renderForecast({ data, loc }) {
 
 function todayPanel(day, loc) {
   const tiles = [];
+  const icon = iconForDay(day, { size: 44 });
+
+  tiles.push(el(
+    'div', { class: 'tile tile-weather' },
+    el('span', { class: 'label' }, '天気'),
+    el('div', { class: 'weather-row' },
+      icon.node,
+      el('span', { class: 'weather-name' }, icon.label)),
+    el('div', { class: 'sub' },
+      icon.inferred ? '降水量と確率からの推定' : `${day.codeModels ?? 0}モデルの合議`),
+  ));
 
   tiles.push(tile('最高気温', fmt(day.tmax?.value, 1), '℃',
     day.tmaxMae !== null ? `実績誤差 ±${fmt(day.tmaxMae, 1)}℃` : '実績はまだ足りない'));
@@ -82,6 +88,40 @@ function tile(label, value, unit, sub) {
     el('span', { class: 'label' }, label),
     el('div', {}, el('span', { class: 'value' }, value), unit ? el('span', { class: 'unit' }, unit) : null),
     el('div', { class: 'sub' }, sub),
+  );
+}
+
+// ------------------------------------------------------------ 日ごとの並び
+
+/**
+ * 日ごとのカード。アイコン・日付・最高最低・降水確率を1枚にまとめる。
+ * グラフより先に、ここだけ見て終わる日の方が多い。
+ */
+function stripPanel(days) {
+  const cards = days.map((d) => {
+    const icon = iconForDay(d, { size: 30 });
+    const isToday = d.lead === 0;
+    return el(
+      'div',
+      { class: `daycard${isToday ? ' today' : ''}`, title: `${fmtDate(d.date)} ${icon.label}` },
+      el('span', { class: 'daycard-date' }, isToday ? '今日' : fmtDate(d.date)),
+      icon.node,
+      el('span', { class: 'daycard-name' }, icon.label),
+      el('span', { class: 'daycard-temp' },
+        el('b', {}, fmt(d.tmax?.value, 0)),
+        ' / ',
+        el('span', { class: 'muted' }, fmt(d.tmin?.value, 0))),
+      el('span', { class: 'daycard-pop' }, fmtPct(d.pop?.value)),
+    );
+  });
+
+  return el(
+    'section', { class: 'panel' },
+    el('h2', {}, '16日先まで'),
+    el('p', { class: 'note' },
+      'マークは7モデルの合議。上段が最高気温、下段が最低気温、その下が降水確率。'
+      + '先の日ほど当たらないので、右へ行くほど参考程度に見る。'),
+    el('div', { class: 'scroll-x' }, el('div', { class: 'daystrip' }, cards)),
   );
 }
 
@@ -193,7 +233,7 @@ function rainPanel(days) {
         d.jma?.pop !== null && d.jma?.pop !== undefined
           ? { k: '降水確率（気象庁）', v: fmtPct(d.jma.pop), color: cssv('--series-2') } : null,
         { k: '降水量', v: `${fmt(d.prcp?.value, 1)}mm` },
-        { k: '天気', v: WMO[d.prcp?.code] ?? WMO[d.jma?.code] ?? '—' },
+        { k: '天気', v: describeCode(d.code ?? d.jma?.code).label },
       ].filter(Boolean),
       footer: d.pop?.method === 'logistic' ? '実測で較正した確率' : 'アンサンブル比率（未較正）',
     },
@@ -231,7 +271,7 @@ function rainPanel(days) {
 // ------------------------------------------------------------------ 表
 
 function tablePanel(days) {
-  const head = ['日付', '先何日', '最高', '80%区間', '最低', '降水確率', '降水量', '実績誤差', '気象庁 最高/最低', '信頼度'];
+  const head = ['日付', '先何日', '天気', '最高', '80%区間', '最低', '降水確率', '降水量', '実績誤差', '気象庁 最高/最低', '信頼度'];
   return el(
     'section',
     { class: 'panel' },
@@ -242,11 +282,14 @@ function tablePanel(days) {
       'table',
       {},
       el('thead', {}, el('tr', {}, head.map((h) => el('th', {}, h)))),
-      el('tbody', {}, days.map((d) => el(
+      el('tbody', {}, days.map((d) => {
+        const icon = iconForDay(d, { size: 20 });
+        return el(
         'tr',
         { class: d.lead === 0 ? 'highlight' : null },
         el('td', {}, fmtDate(d.date)),
         el('td', {}, `${d.lead}日`),
+        el('td', { class: 'cell-weather' }, icon.node, el('span', {}, icon.label)),
         el('td', {}, `${fmt(d.tmax?.value, 1)}℃`),
         el('td', {}, d.tmaxInterval ? `${fmt(d.tmaxInterval.low, 1)}〜${fmt(d.tmaxInterval.high, 1)}` : '—'),
         el('td', {}, `${fmt(d.tmin?.value, 1)}℃`),
@@ -256,7 +299,8 @@ function tablePanel(days) {
         el('td', {}, d.jma?.tmax !== null && d.jma?.tmax !== undefined
           ? `${fmt(d.jma.tmax, 0)} / ${fmt(d.jma.tmin, 0)}` : '—'),
         el('td', {}, d.jma?.reliability ?? '—'),
-      ))),
+        );
+      })),
     )),
   );
 }

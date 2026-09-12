@@ -22,6 +22,7 @@
 ### 2. CDN を使わない
 
 スクリプト・フォント・アイコンを外部から読み込まない。`public/` 内で完結させる。
+PWA のアイコン PNG も画像ライブラリを使わず、`scripts/lib/png.js` で自前に書き出す。
 
 ### 3. 無料の範囲を出ない
 
@@ -72,6 +73,7 @@ node scripts/build-derived.js                # 検証・MOS学習・合議を再
 node scripts/backfill-previous-runs.js       # 過去の予報を遡って取得
 node scripts/backfill-archive.js             # ERA5 長期データを取得（429 が出たら日を改めて再実行）
 node scripts/compress-old.js                 # 前年以前の NDJSON を gzip 化
+node scripts/make-icons.js                   # PWA のアイコンを生成（図柄を変えたときだけ）
 node scripts/serve.js                        # public/ をローカル配信（既定 8787 番）
 node --test test/*.test.js                   # 単体テスト
 ```
@@ -106,6 +108,23 @@ node --test test/*.test.js                   # 単体テスト
 - 実測レコードの `n`（日内の観測個数）が閾値未満の日は検証対象から除外する
 - 欠測を 0 で埋めない。`null` のまま持ち、集計側で除外する
 - グラフで欠測日を線で繋がない
+
+### PWA
+
+- `public/manifest.webmanifest` の `start_url` と `scope` は**必ず相対パス**にする。
+  GitHub Pages は `/weather-analysis/` の下に配信されるので、絶対パスにすると壊れる
+- `public/index.html` の参照も同じ理由ですべて相対にする
+- `public/sw.js` のキャッシュ方針は2種類。部品はキャッシュ優先、データはネットワーク優先。
+  予報は毎日変わるので、繋がっているときに古い値を見せない
+- `sw.js` の `SHELL_ASSETS` に載せたファイルは実在しなければならない。
+  画面のモジュールを増やしたらここにも足す（テストで検査している）
+- キャッシュの持ち方を変えたら `CACHE_VERSION` を上げる。上げないと古い版が残る
+
+### 天気アイコン
+
+- WMO の天気コードから `public/assets/weather-icon.js` が描き分ける
+- **形と色だけで情報を伝えない。** 必ず名前（晴れ・雨など）を併記する
+- 合議した天気コードが無い日は降水量と確率から推定し、「推定」と明示する
 
 ### データ追記
 

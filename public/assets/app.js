@@ -20,7 +20,28 @@ const state = {
   loc: null,
   tab: 'forecast',
   cache: new Map(),
+  // ホーム画面へ追加できるとブラウザが言ってきたら、その合図を取っておく
+  installPrompt: null,
+  installDismissed: false,
+  offline: !navigator.onLine,
 };
+
+// ブラウザは既定の案内を出す前にこの合図をくれる。受け取って自前の案内に差し替える
+window.addEventListener('beforeinstallprompt', (ev) => {
+  ev.preventDefault();
+  state.installPrompt = ev;
+  render();
+});
+window.addEventListener('appinstalled', () => {
+  state.installPrompt = null;
+  render();
+});
+for (const type of ['online', 'offline']) {
+  window.addEventListener(type, () => {
+    state.offline = !navigator.onLine;
+    render();
+  });
+}
 
 async function loadJson(name) {
   if (state.cache.has(name)) return state.cache.get(name);
@@ -142,6 +163,44 @@ function restore() {
   } catch { /* 読めなくても既定値で動く */ }
 }
 
+/** ホーム画面への追加を促す1行。出せるときだけ出す */
+function renderInstallBar() {
+  const bars = [];
+
+  if (state.offline) {
+    bars.push(el(
+      'div', { class: 'install-bar offline-bar' },
+      el('span', { class: 'grow' },
+        'オフライン。最後に開いたときのデータを表示している。'
+        + '繋がると自動で最新に入れ替わる。'),
+    ));
+  }
+
+  if (state.installPrompt && !state.installDismissed) {
+    bars.push(el(
+      'div', { class: 'install-bar' },
+      el('span', { class: 'grow' },
+        'ホーム画面に追加すると、アプリとして開けてオフラインでも見られる。'),
+      el('button', {
+        class: 'primary',
+        onclick: async () => {
+          const prompt = state.installPrompt;
+          state.installPrompt = null;
+          render();
+          prompt.prompt();
+          await prompt.userChoice;
+        },
+      }, '追加する'),
+      el('button', {
+        class: 'ghost',
+        onclick: () => { state.installDismissed = true; render(); },
+      }, '今はしない'),
+    ));
+  }
+
+  return bars;
+}
+
 function renderFooter() {
   const a = state.meta.attribution ?? {};
   const loc = state.meta.locations.find((l) => l.key === state.loc);
@@ -157,14 +216,14 @@ function renderFooter() {
 
 async function render() {
   const app = document.getElementById('app');
-  const main = el('main', {}, el('p', { class: 'empty' }, '読み込み中…'));
+  const main = el('main', {}, ...renderInstallBar(), el('p', { class: 'empty' }, '読み込み中…'));
   replace(app, renderHeader(), main, renderFooter());
 
   const tab = TABS.find((t) => t.id === state.tab);
   try {
     const data = await loadFor(state.tab, state.loc);
     const loc = state.meta.locations.find((l) => l.key === state.loc);
-    replace(main, ...tab.render({ data, loc, meta: state.meta }));
+    replace(main, ...renderInstallBar(), ...tab.render({ data, loc, meta: state.meta }));
   } catch (err) {
     console.error(err);
     replace(main, el('div', { class: 'panel' },
@@ -184,6 +243,11 @@ async function main() {
   }
   state.loc = state.meta.locations[0]?.key ?? null;
   restore();
+
+  // manifest のショートカットから ?tab=... で直接開ける
+  const wanted = new URL(location.href).searchParams.get('tab');
+  if (wanted && TABS.some((t) => t.id === wanted)) state.tab = wanted;
+
   render();
   // 画面幅が変わると Canvas の図を描き直す必要がある
   let timer = null;

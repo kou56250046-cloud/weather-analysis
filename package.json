@@ -12,7 +12,8 @@
     "collect": "node scripts/collect-forecast.js && node scripts/collect-observation.js && node scripts/collect-jma-forecast.js",
     "build": "node scripts/build-derived.js",
     "serve": "node scripts/serve.js",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "icons": "node scripts/make-icons.js"
   },
   "dependencies": {},
   "devDependencies": {}

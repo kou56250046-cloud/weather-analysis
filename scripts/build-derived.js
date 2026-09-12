@@ -150,6 +150,31 @@ function scoreOne(source, model, lead, forecasts, obsByDate, extra = {}) {
   return out;
 }
 
+/**
+ * WMO の天気コードを荒天の度合いで並べた順。小さいほど穏やか。
+ * ここに無いコードは「曇り」の位置に置く。
+ */
+const CODE_SEVERITY = [
+  0, 1, 2, 3, 45, 48, 51, 53, 55, 56, 57,
+  61, 80, 63, 81, 65, 82, 66, 67, 71, 85, 73, 75, 86, 77, 95, 96, 99,
+];
+
+/**
+ * 複数モデルの天気コードから1つを決める。
+ *
+ * 単純な多数決だと、7モデルがすべて違うコードを出したときに先頭が勝ってしまう。
+ * 荒天の度合いで並べて中央の値を採る。1つのモデルだけが極端でも引きずられない。
+ */
+export function consensusCode(codes) {
+  if (!codes || codes.length === 0) return null;
+  const rankOf = (c) => {
+    const i = CODE_SEVERITY.indexOf(Number(c));
+    return i >= 0 ? i : CODE_SEVERITY.indexOf(3);
+  };
+  const sorted = [...codes].sort((a, b) => rankOf(a) - rankOf(b));
+  return sorted[Math.floor((sorted.length - 1) / 2)];
+}
+
 // ------------------------------------------------------------------ 地点ごとの処理
 
 async function buildLocation(loc, meta) {
@@ -249,6 +274,12 @@ async function buildLocation(loc, meta) {
       coef: mosByVarLead.get(`rain|${usedLead}`),
       fallbackPop: ensSlot?.pop ?? null,
     });
+
+    // 天気マーク。モデルごとに違うコードを出すので、荒天の度合いで並べて中央を取る
+    const codes = MODELS.map((m) => slot.get(m)?.code)
+      .filter((v) => v !== null && v !== undefined && Number.isFinite(v));
+    day.code = consensusCode(codes);
+    day.codeModels = codes.length;
 
     for (const v of INTERVAL_VARS) {
       const q = [...slot.values()].find((r) => r.q?.[v])?.q?.[v] ?? null;

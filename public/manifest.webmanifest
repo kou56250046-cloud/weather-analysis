@@ -1,0 +1,50 @@
+{
+  "name": "天気予報の精度検証",
+  "short_name": "天気精度",
+  "description": "7つの数値予報モデルを合議し、過去の予報と実測から学習した補正をかけた天気予報。予報の隣に実績誤差を必ず出す。",
+  "lang": "ja",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f4f4f1",
+  "theme_color": "#2a78d6",
+  "categories": ["weather", "utilities"],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "成績",
+      "short_name": "成績",
+      "description": "モデル別・何日先別の誤差実績",
+      "url": "./?tab=scores",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "平年比",
+      "short_name": "平年比",
+      "description": "今が平年に対して暑いか寒いか",
+      "url": "./?tab=normals",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

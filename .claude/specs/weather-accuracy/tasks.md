@@ -84,6 +84,19 @@
 - [x] `scripts/compress-old.js`（前年以前を gzip 化。当初計画に無かった）
 - 確認: `workflow_dispatch` で手動実行し、コミットと Pages 更新を確認してから cron を有効にする
 
+## T13. PWA と天気アイコン（当初計画に無し・後から追加）
+
+- [x] `scripts/lib/png.js` 依存ゼロの PNG 書き出しと図形ラスタライザ
+- [x] `scripts/make-icons.js` 雲と太陽のアイコンを 5 サイズ生成
+- [x] `public/manifest.webmanifest` 相対パス・maskable・ショートカット
+- [x] `public/sw.js` 部品はキャッシュ優先、データはネットワーク優先
+- [x] `public/assets/weather-icon.js` WMO コードから天気アイコンを描き分ける
+- [x] `build-derived.js` に天気コードの合議（荒天の度合いで並べた中央値）を追加
+- [x] 予報タブに日ごとのカード帯・天気の列・今日の大きなアイコン
+- [x] ホーム画面追加の案内とオフライン表示
+- 確認: `node --test test/weather-code.test.js`。
+  manifest とサービスワーカーが実在しないファイルを参照していないことも検査している
+
 ## T12. 公開
 
 - [ ] public リポジトリ作成、初回 push
