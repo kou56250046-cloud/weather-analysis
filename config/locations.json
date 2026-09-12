@@ -1,0 +1,134 @@
+{
+  "v": 1,
+  "updatedAt": "2026-09-12T01:13:00.707Z",
+  "locations": [
+    {
+      "key": "setagaya",
+      "label": "東京都世田谷区",
+      "pref": "東京都",
+      "lat": 35.646,
+      "lon": 139.653,
+      "station": {
+        "precNo": "44",
+        "blockNo": "47662",
+        "kind": "s",
+        "name": "東京",
+        "lat": 35.6917,
+        "lon": 139.75,
+        "alt": 25.2,
+        "distanceKm": 10.1,
+        "amedasCode": "44132",
+        "amedasName": "東京",
+        "has": {
+          "prcp": true,
+          "temp": true,
+          "sun": true,
+          "wind": true,
+          "snow": true,
+          "humidity": true
+        }
+      },
+      "jma": {
+        "officeCode": "130000",
+        "class10": "130010",
+        "class10Name": "東京地方"
+      }
+    },
+    {
+      "key": "kawasaki",
+      "label": "神奈川県川崎市",
+      "pref": "神奈川県",
+      "lat": 35.531,
+      "lon": 139.703,
+      "station": {
+        "precNo": "46",
+        "blockNo": "47670",
+        "kind": "s",
+        "name": "横浜",
+        "lat": 35.4383,
+        "lon": 139.6517,
+        "alt": 39.1,
+        "distanceKm": 11.3,
+        "amedasCode": "46106",
+        "amedasName": "横浜",
+        "has": {
+          "prcp": true,
+          "temp": true,
+          "sun": true,
+          "wind": true,
+          "snow": true,
+          "humidity": true
+        }
+      },
+      "jma": {
+        "officeCode": "140000",
+        "class10": "140010",
+        "class10Name": "東部"
+      }
+    },
+    {
+      "key": "sagamihara",
+      "label": "神奈川県相模原市",
+      "pref": "神奈川県",
+      "lat": 35.571,
+      "lon": 139.373,
+      "station": {
+        "precNo": "44",
+        "blockNo": "0366",
+        "kind": "a",
+        "name": "八王子",
+        "lat": 35.6667,
+        "lon": 139.3167,
+        "alt": 123,
+        "distanceKm": 11.8,
+        "amedasCode": "44112",
+        "amedasName": "八王子",
+        "has": {
+          "prcp": true,
+          "temp": true,
+          "sun": true,
+          "wind": true,
+          "snow": false,
+          "humidity": true
+        }
+      },
+      "jma": {
+        "officeCode": "140000",
+        "class10": "140020",
+        "class10Name": "西部"
+      }
+    },
+    {
+      "key": "atami",
+      "label": "静岡県熱海市",
+      "pref": "静岡県",
+      "lat": 35.096,
+      "lon": 139.072,
+      "station": {
+        "precNo": "50",
+        "blockNo": "47668",
+        "kind": "s",
+        "name": "網代",
+        "lat": 35.045,
+        "lon": 139.0917,
+        "alt": 66.9,
+        "distanceKm": 5.9,
+        "amedasCode": "50281",
+        "amedasName": "網代",
+        "has": {
+          "prcp": true,
+          "temp": true,
+          "sun": true,
+          "wind": true,
+          "snow": true,
+          "humidity": true
+        }
+      },
+      "jma": {
+        "officeCode": "220000",
+        "class10": "220020",
+        "class10Name": "伊豆"
+      }
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "name": "weather-analysis",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "マルチモデル合議と統計補正による天気予報と、過去気象データの分析ダッシュボード",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "locations": "node scripts/resolve-locations.js",
+    "collect": "node scripts/collect-forecast.js && node scripts/collect-observation.js && node scripts/collect-jma-forecast.js",
+    "build": "node scripts/build-derived.js",
+    "serve": "node scripts/serve.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

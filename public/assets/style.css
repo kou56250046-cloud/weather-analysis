@@ -1,0 +1,486 @@
+/*
+ * 配色は dataviz の検証済みパレットから。
+ * 系列に使うのは3枠だけ（自作合議 / 気象庁 / 単純平均）。
+ * 個々のモデルは系列色を配らず、控えめな灰色で背景に置く。
+ * 色を8枠まで配ると、判別できない組み合わせが出る。
+ *
+ * ライトモードの aqua は背景とのコントラストが 3:1 に届かないため、
+ * 凡例だけに頼らず必ず直接ラベルと数値表を併記する。
+ */
+
+:root {
+  color-scheme: light;
+
+  --surface-1: #fcfcfb;
+  --plane: #f4f4f1;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11, 11, 11, 0.10);
+  --shadow: rgba(11, 11, 11, 0.08);
+
+  /* 系列 */
+  --series-1: #2a78d6;  /* 自作の合議予報 */
+  --series-2: #eb6834;  /* 気象庁予報 */
+  --series-3: #1baf7a;  /* 補正なしの単純平均 */
+  --series-quiet: #b4b2ab; /* 個々のモデル */
+
+  /* 逐次（気温の大小、誤差の大小） */
+  --seq-100: #cde2fb;
+  --seq-250: #86b6ef;
+  --seq-400: #3987e5;
+  --seq-550: #1c5cab;
+  --seq-700: #0d366b;
+
+  /* 発散（平年差） */
+  --div-cool: #2a78d6;
+  --div-mid: #f0efec;
+  --div-warm: #d03b3b;
+
+  /* 状態 */
+  --good: #0ca30c;
+  --warning: #fab219;
+  --serious: #ec835a;
+  --critical: #d03b3b;
+
+  --radius: 10px;
+  --gap: 16px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --plane: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255, 255, 255, 0.10);
+    --shadow: rgba(0, 0, 0, 0.5);
+
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-quiet: #5a5955;
+
+    --seq-100: #0d366b;
+    --seq-250: #184f95;
+    --seq-400: #2a78d6;
+    --seq-550: #5598e7;
+    --seq-700: #9ec5f4;
+
+    --div-cool: #3987e5;
+    --div-mid: #383835;
+    --div-warm: #e66767;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-1: #1a1a19;
+  --plane: #0d0d0d;
+  --text-primary: #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted: #898781;
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --border: rgba(255, 255, 255, 0.10);
+  --shadow: rgba(0, 0, 0, 0.5);
+
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-quiet: #5a5955;
+
+  --seq-100: #0d366b;
+  --seq-250: #184f95;
+  --seq-400: #2a78d6;
+  --seq-550: #5598e7;
+  --seq-700: #9ec5f4;
+
+  --div-cool: #3987e5;
+  --div-mid: #383835;
+  --div-warm: #e66767;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--plane);
+  color: var(--text-primary);
+  font: 14px/1.6 system-ui, -apple-system, "Segoe UI", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  font-feature-settings: "tnum" 1;
+}
+
+/* ------------------------------------------------------------------ 骨格 */
+
+header.top {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 16px 0;
+}
+
+.title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+h1 {
+  font-size: 15px;
+  font-weight: 650;
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+
+.updated {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-left: auto;
+}
+
+select, button.ghost {
+  font: inherit;
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--surface-1);
+  border: 1px solid var(--axis);
+  border-radius: 8px;
+  padding: 5px 9px;
+  cursor: pointer;
+}
+
+button.ghost:hover { background: var(--plane); }
+
+nav.tabs {
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+nav.tabs::-webkit-scrollbar { display: none; }
+
+nav.tabs button {
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 550;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  border-bottom: 2.5px solid transparent;
+  padding: 9px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+nav.tabs button:hover { color: var(--text-primary); }
+nav.tabs button[aria-selected="true"] {
+  color: var(--text-primary);
+  border-bottom-color: var(--series-1);
+}
+
+main {
+  padding: var(--gap);
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.panel {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: var(--gap);
+}
+
+.panel > h2 {
+  font-size: 14px;
+  font-weight: 650;
+  margin: 0 0 4px;
+}
+
+.panel > p.note {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  margin: 0 0 14px;
+  max-width: 62ch;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--gap);
+}
+
+/* ------------------------------------------------------------- 数字の札 */
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.tile {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--surface-1);
+}
+
+.tile .label {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  display: block;
+  margin-bottom: 2px;
+}
+
+.tile .value {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.tile .unit {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin-left: 2px;
+}
+
+.tile .sub {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* ---------------------------------------------------------------- 凡例 */
+
+.legend {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.legend span.item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legend i.swatch {
+  width: 14px;
+  height: 2.5px;
+  border-radius: 2px;
+  display: inline-block;
+}
+.legend i.swatch.band { height: 9px; opacity: 0.22; }
+.legend i.swatch.dash {
+  height: 0;
+  border-top: 2.5px dashed currentColor;
+  background: none !important;
+}
+
+/* ---------------------------------------------------------------- 図 */
+
+figure {
+  margin: 0;
+}
+
+figure svg { display: block; width: 100%; height: auto; }
+
+.scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ---------------------------------------------------------------- 表 */
+
+table {
+  border-collapse: collapse;
+  font-size: 12.5px;
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+
+th, td {
+  padding: 5px 9px;
+  text-align: right;
+  border-bottom: 1px solid var(--grid);
+  white-space: nowrap;
+}
+
+th {
+  color: var(--text-muted);
+  font-weight: 550;
+  font-size: 11.5px;
+  text-align: right;
+  position: sticky;
+  top: 0;
+  background: var(--surface-1);
+}
+
+th:first-child, td:first-child { text-align: left; }
+
+tr.highlight td {
+  background: color-mix(in srgb, var(--series-1) 8%, transparent);
+  font-weight: 600;
+}
+
+td.best { color: var(--good); font-weight: 650; }
+
+details.table-view {
+  margin-top: 12px;
+  border-top: 1px solid var(--grid);
+  padding-top: 8px;
+}
+details.table-view > summary {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  list-style: none;
+}
+details.table-view > summary::before { content: "▸ "; }
+details.table-view[open] > summary::before { content: "▾ "; }
+details.table-view .scroll-x { max-height: 380px; overflow-y: auto; margin-top: 8px; }
+
+/* ------------------------------------------------------------ 注意書き */
+
+.caveat {
+  font-size: 12px;
+  color: var(--text-secondary);
+  border-left: 2.5px solid var(--warning);
+  padding: 4px 0 4px 10px;
+  margin: 10px 0;
+}
+
+.caveat.serious { border-left-color: var(--serious); }
+
+.empty {
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 26px 0;
+  text-align: center;
+}
+
+/* -------------------------------------------------------- ツールチップ */
+
+#tip {
+  position: fixed;
+  z-index: 100;
+  pointer-events: none;
+  background: var(--surface-1);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 14px var(--shadow);
+  padding: 8px 10px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  max-width: 280px;
+  opacity: 0;
+  transition: opacity 90ms;
+  font-variant-numeric: tabular-nums;
+}
+#tip[data-show="1"] { opacity: 1; }
+#tip .t-title { font-weight: 650; margin-bottom: 3px; }
+#tip .t-row { display: flex; gap: 10px; justify-content: space-between; }
+#tip .t-row .k { color: var(--text-secondary); }
+#tip .t-row .v { font-weight: 550; }
+#tip i.swatch {
+  width: 9px; height: 9px; border-radius: 2px;
+  display: inline-block; margin-right: 5px;
+}
+
+/* -------------------------------------------------------------- 条件検索 */
+
+.query-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px 14px;
+  align-items: end;
+  margin-bottom: 14px;
+}
+
+.field label {
+  display: block;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-bottom: 3px;
+}
+
+.field .pair {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.field input {
+  font: inherit;
+  font-size: 13px;
+  width: 100%;
+  min-width: 0;
+  padding: 5px 7px;
+  border: 1px solid var(--axis);
+  border-radius: 8px;
+  background: var(--surface-1);
+  color: var(--text-primary);
+}
+
+.field .tilde { color: var(--text-muted); }
+
+button.primary {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--series-1);
+  border: none;
+  border-radius: 8px;
+  padding: 7px 16px;
+  cursor: pointer;
+}
+button.primary:hover { filter: brightness(1.08); }
+
+/* ---------------------------------------------------------------- footer */
+
+footer {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 16px 34px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.8;
+}
+footer a { color: var(--text-secondary); }
+
+/* --------------------------------------------------------------- 狭い画面 */
+
+@media (max-width: 560px) {
+  main { padding: 10px; }
+  .panel { padding: 12px; }
+  .tile .value { font-size: 19px; }
+  nav.tabs button { padding: 9px 11px; font-size: 13px; }
+  .title-row { gap: 8px; }
+  .controls { width: 100%; margin-left: 0; }
+}

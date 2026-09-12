@@ -1,0 +1,14 @@
+{"v":1,"id":"forecast|2026-09-12T10:10:13+09:00","ts":"2026-09-12T10:10:13+09:00","job":"forecast","ok":true,"added":272,"errors":[],"durationMs":6254}
+{"v":1,"id":"forecast|2026-09-12T10:10:25+09:00","ts":"2026-09-12T10:10:25+09:00","job":"forecast","ok":true,"added":272,"errors":[],"durationMs":6316}
+{"v":1,"id":"forecast|2026-09-12T10:10:31+09:00","ts":"2026-09-12T10:10:31+09:00","job":"forecast","ok":true,"added":0,"errors":[],"durationMs":6192}
+{"v":1,"id":"observation|2026-09-12T10:11:06+09:00","ts":"2026-09-12T10:11:06+09:00","job":"observation","ok":true,"added":168,"errors":[],"durationMs":2196}
+{"v":1,"id":"observation|2026-09-12T10:11:08+09:00","ts":"2026-09-12T10:11:08+09:00","job":"observation","ok":true,"added":0,"errors":[],"durationMs":2199}
+{"v":1,"id":"jma-forecast|2026-09-12T10:14:31+09:00","ts":"2026-09-12T10:14:31+09:00","job":"jma-forecast","ok":true,"added":32,"errors":[],"durationMs":1037}
+{"v":1,"id":"jma-forecast|2026-09-12T10:14:32+09:00","ts":"2026-09-12T10:14:32+09:00","job":"jma-forecast","ok":true,"added":0,"errors":[],"durationMs":1046}
+{"v":1,"id":"observation|2026-09-12T10:24:25+09:00","ts":"2026-09-12T10:24:25+09:00","job":"observation","ok":true,"added":4016,"errors":[],"durationMs":42746}
+{"v":1,"id":"derive|2026-09-12T12:36:45+09:00","ts":"2026-09-12T12:36:45+09:00","job":"derive","ok":true,"added":4,"errors":[],"durationMs":69370}
+{"v":1,"id":"derive|2026-09-12T12:44:28+09:00","ts":"2026-09-12T12:44:28+09:00","job":"derive","ok":true,"added":4,"errors":[],"durationMs":8341532}
+{"v":1,"id":"derive|2026-09-12T12:50:57+09:00","ts":"2026-09-12T12:50:57+09:00","job":"derive","ok":true,"added":4,"errors":[],"durationMs":66997}
+{"v":1,"id":"derive|2026-09-12T12:53:14+09:00","ts":"2026-09-12T12:53:14+09:00","job":"derive","ok":true,"added":4,"errors":[],"durationMs":66088}
+{"v":1,"id":"derive|2026-09-12T12:55:22+09:00","ts":"2026-09-12T12:55:22+09:00","job":"derive","ok":true,"added":4,"errors":[],"durationMs":65956}
+{"v":1,"id":"derive|2026-09-12T13:04:24+09:00","ts":"2026-09-12T13:04:24+09:00","job":"derive","ok":true,"added":4,"errors":[],"durationMs":76212}

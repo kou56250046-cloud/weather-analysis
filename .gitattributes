@@ -1,0 +1,8 @@
+# 改行は LF に統一する。
+# GitHub Actions（Linux）が毎日 data/ を書き換えるため、ローカルが CRLF で書き戻すと
+# 中身が同じでも全行が差分として出てしまう。NDJSON は行数が多いので影響が大きい。
+* text=auto eol=lf
+
+# gzip 済みの過去データはバイナリとして扱う
+*.gz binary
+*.png binary

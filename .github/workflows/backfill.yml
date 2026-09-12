@@ -1,0 +1,63 @@
+name: backfill
+
+# 過去データの一括取得。手動でだけ回す。
+#
+# Open-Meteo の無料枠には1時間あたり・1日あたりの上限がある。
+# 429 が返った区間は飛ばされるので、取り切れなかったらもう一度回す。
+# 取得済みの区間は飛ばすため、二度目以降は空いた穴だけを埋める。
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: '何を取るか'
+        type: choice
+        options: [previous-runs, archive, observation, normals]
+        default: archive
+      from:
+        description: '開始日（YYYY-MM-DD、observation は YYYY-MM）'
+        type: string
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: backfill
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: 取得する
+        run: |
+          FROM_ARG=""
+          if [ -n "${{ inputs.from }}" ]; then FROM_ARG="--from ${{ inputs.from }}"; fi
+          case "${{ inputs.target }}" in
+            previous-runs) node scripts/backfill-previous-runs.js $FROM_ARG ;;
+            archive)       node scripts/backfill-archive.js       $FROM_ARG ;;
+            observation)   node scripts/collect-observation.js    $FROM_ARG ;;
+            normals)       node scripts/collect-normals.js --force ;;
+          esac
+
+      - name: 派生データを作り直す
+        run: node scripts/build-derived.js
+
+      - name: 変更があればコミットする
+        run: |
+          if [ -z "$(git status --porcelain data/ public/data/)" ]; then
+            echo '変更なし' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/ public/data/
+          git commit -m "${{ inputs.target }} をバックフィル $(TZ=Asia/Tokyo date +%Y-%m-%d)"
+          git push

@@ -1,0 +1,93 @@
+name: collect
+
+# 予報と実測を取って data/ に追記し、public/data/ を作り直す。
+#
+# 01:00 JST  12UTC の予報、前日確定の実測、気象庁予報、派生ビルド
+# 06:00 JST  朝の最新予報だけ更新。実測と派生は回さない
+#
+# 収集スクリプトは冪等なので、同じ時間帯に2回走っても行は増えない。
+
+on:
+  schedule:
+    # cron は UTC 指定。JST は +9 時間
+    - cron: '0 16 * * *'   # 01:00 JST
+    - cron: '0 21 * * *'   # 06:00 JST
+  workflow_dispatch:
+    inputs:
+      full:
+        description: '実測と派生ビルドも回す'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: collect
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # npm 依存ゼロなので install しない
+
+      - name: 実測と派生も回すかを決める
+        id: mode
+        run: |
+          if [ "${{ github.event.schedule }}" = "0 21 * * *" ] && [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "full=false" >> "$GITHUB_OUTPUT"
+            echo "朝の回。予報のみ更新する" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "full=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 予報を取る
+        run: node scripts/collect-forecast.js
+
+      - name: 気象庁の府県天気予報を取る
+        # 気象庁の JSON は公式 API ではない。落ちても全体は止めない
+        continue-on-error: true
+        run: node scripts/collect-jma-forecast.js
+
+      - name: 実測を取る
+        if: steps.mode.outputs.full == 'true'
+        continue-on-error: true
+        run: node scripts/collect-observation.js
+
+      - name: 派生データを作り直す
+        if: steps.mode.outputs.full == 'true'
+        run: node scripts/build-derived.js
+
+      - name: 古い年のファイルを圧縮する
+        if: steps.mode.outputs.full == 'true'
+        run: node scripts/compress-old.js
+
+      - name: 収集の結果を要約に出す
+        if: always()
+        run: |
+          {
+            echo '## 収集ログ（直近5件）'
+            echo '```'
+            tail -n 5 data/collect-log.ndjson 2>/dev/null || echo 'ログなし'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 変更があればコミットする
+        run: |
+          if [ -z "$(git status --porcelain data/ public/data/)" ]; then
+            echo '変更なし' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/ public/data/
+          git commit -m "データを更新 $(TZ=Asia/Tokyo date +%Y-%m-%d' '%H:%M)"
+          git push
