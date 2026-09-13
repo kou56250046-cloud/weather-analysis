@@ -31,7 +31,13 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # 既定では「起動のきっかけになったコミット」を取る。
+      # collect.yml から呼ばれるとき、収集がその直前に作ったコミットは
+      # まだそこに含まれていないので、明示的にブランチの先頭を取る。
+      # これをしないと、収集した内容が1回ぶん遅れて公開される
       - uses: actions/checkout@v4
+        with:
+          ref: main
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
