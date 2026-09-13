@@ -1,9 +1,9 @@
 {
   "v": 1,
-  "ranAt": "2026-09-13T20:08:21+09:00",
-  "event": "push",
-  "schedule": "",
-  "runId": "34753609762",
+  "ranAt": "2026-09-14T03:27:52+09:00",
+  "event": "schedule",
+  "schedule": "0 16 * * *",
+  "runId": "34774649591",
   "runAttempt": "1",
   "changedCount": 39,
   "changed": [
@@ -16,14 +16,14 @@
     " M data/hourly/kawasaki.json",
     " M data/hourly/sagamihara.json",
     " M data/hourly/setagaya.json",
-    " M data/jma-fcst/atami/2026-09.ndjson",
-    " M data/jma-fcst/kawasaki/2026-09.ndjson",
-    " M data/jma-fcst/sagamihara/2026-09.ndjson",
-    " M data/jma-fcst/setagaya/2026-09.ndjson",
     " M data/obs/atami/2026.ndjson",
     " M data/obs/kawasaki/2026.ndjson",
     " M data/obs/sagamihara/2026.ndjson",
     " M data/obs/setagaya/2026.ndjson",
+    " M public/data/coef-atami.json",
+    " M public/data/coef-kawasaki.json",
+    " M public/data/coef-sagamihara.json",
+    " M public/data/coef-setagaya.json",
     " M public/data/forecast-atami.json",
     " M public/data/forecast-kawasaki.json",
     " M public/data/forecast-sagamihara.json",
@@ -47,60 +47,20 @@
     " M public/data/scores-sagamihara.json",
     " M public/data/scores-setagaya.json"
   ],
-  "headSha": "4f5ce43",
+  "headSha": "f2e3681",
   "mtimes": {
-    "public/data/meta.json": "2026-09-13T11:08:21.167Z",
-    "public/data/forecast-setagaya.json": "2026-09-13T11:07:52.458Z",
-    "public/data/hourly-setagaya.json": "2026-09-13T11:07:52.462Z",
-    "data/collect-log.ndjson": "2026-09-13T11:08:21.168Z"
+    "public/data/meta.json": "2026-09-13T18:27:52.203Z",
+    "public/data/forecast-setagaya.json": "2026-09-13T18:27:23.421Z",
+    "public/data/hourly-setagaya.json": "2026-09-13T18:27:23.424Z",
+    "data/collect-log.ndjson": "2026-09-13T18:27:52.205Z"
   },
   "lastCollect": {
-    "forecast": "2026-09-13T20:07:38+09:00",
-    "observation": "2026-09-13T20:07:42+09:00",
-    "jma-forecast": "2026-09-13T20:07:39+09:00",
-    "derive": "2026-09-13T20:08:21+09:00"
+    "forecast": "2026-09-14T03:27:09+09:00",
+    "observation": "2026-09-14T03:27:13+09:00",
+    "jma-forecast": "2026-09-14T03:27:11+09:00",
+    "derive": "2026-09-14T03:27:52+09:00"
   },
   "recentLog": [
-    {
-      "v": 1,
-      "id": "derive|2026-09-12T14:58:50+09:00",
-      "ts": "2026-09-12T14:58:50+09:00",
-      "job": "derive",
-      "ok": true,
-      "added": 4,
-      "errors": [],
-      "durationMs": 67582
-    },
-    {
-      "v": 1,
-      "id": "derive|2026-09-12T15:12:47+09:00",
-      "ts": "2026-09-12T15:12:47+09:00",
-      "job": "derive",
-      "ok": true,
-      "added": 4,
-      "errors": [],
-      "durationMs": 62698
-    },
-    {
-      "v": 1,
-      "id": "forecast|2026-09-13T19:45:03+09:00",
-      "ts": "2026-09-13T19:45:03+09:00",
-      "job": "forecast",
-      "ok": true,
-      "added": 280,
-      "errors": [],
-      "durationMs": 8048
-    },
-    {
-      "v": 1,
-      "id": "derive|2026-09-13T19:46:27+09:00",
-      "ts": "2026-09-13T19:46:27+09:00",
-      "job": "derive",
-      "ok": true,
-      "added": 4,
-      "errors": [],
-      "durationMs": 61637
-    },
     {
       "v": 1,
       "id": "forecast|2026-09-13T20:07:38+09:00",
@@ -140,6 +100,46 @@
       "added": 4,
       "errors": [],
       "durationMs": 38706
+    },
+    {
+      "v": 1,
+      "id": "forecast|2026-09-14T03:27:09+09:00",
+      "ts": "2026-09-14T03:27:09+09:00",
+      "job": "forecast",
+      "ok": true,
+      "added": 260,
+      "errors": [],
+      "durationMs": 4636
+    },
+    {
+      "v": 1,
+      "id": "jma-forecast|2026-09-14T03:27:11+09:00",
+      "ts": "2026-09-14T03:27:11+09:00",
+      "job": "jma-forecast",
+      "ok": true,
+      "added": 0,
+      "errors": [],
+      "durationMs": 1359
+    },
+    {
+      "v": 1,
+      "id": "observation|2026-09-14T03:27:13+09:00",
+      "ts": "2026-09-14T03:27:13+09:00",
+      "job": "observation",
+      "ok": true,
+      "added": 4,
+      "errors": [],
+      "durationMs": 2259
+    },
+    {
+      "v": 1,
+      "id": "derive|2026-09-14T03:27:52+09:00",
+      "ts": "2026-09-14T03:27:52+09:00",
+      "job": "derive",
+      "ok": true,
+      "added": 4,
+      "errors": [],
+      "durationMs": 38790
     }
   ]
 }
