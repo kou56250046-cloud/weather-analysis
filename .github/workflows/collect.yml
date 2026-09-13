@@ -50,10 +50,15 @@ jobs:
 
       # npm 依存ゼロなので install しない
 
+      # 朝の回（06:00 JST）は予報だけ。実測は前日ぶんが確定する深夜の回で取る。
+      # 手動実行では inputs.full に従う。宣言だけして見ていなかったので繋いだ
       - name: 実測と派生も回すかを決める
         id: mode
         run: |
-          if [ "${{ github.event_name }}" = "schedule" ] && [ "${{ github.event.schedule }}" = "0 21 * * *" ]; then
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "full=${{ inputs.full }}" >> "$GITHUB_OUTPUT"
+            echo "手動実行。実測と派生: ${{ inputs.full }}" >> "$GITHUB_STEP_SUMMARY"
+          elif [ "${{ github.event_name }}" = "schedule" ] && [ "${{ github.event.schedule }}" = "0 21 * * *" ]; then
             echo "full=false" >> "$GITHUB_OUTPUT"
             echo '朝の回。予報のみ更新する' >> "$GITHUB_STEP_SUMMARY"
           else
