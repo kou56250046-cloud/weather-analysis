@@ -97,6 +97,25 @@
 - 確認: `node --test test/weather-code.test.js`。
   manifest とサービスワーカーが実在しないファイルを参照していないことも検査している
 
+## T14. 時間別予報と実況（当初計画に無し・後から追加）
+
+- [x] `openmeteo.js` に `fetchForecastHourly`。7モデルの時間別を平均し、天気コードは中央の荒天度を採る
+- [x] `collect-forecast.js` が `data/hourly/<loc>.json` を上書き保存（履歴は残さない）
+- [x] `build-derived.js` が `public/data/hourly-<loc>.json` を出力
+- [x] 予報タブに「1時間ごと（今日と明日）」。気温・体感・降水確率・降水量・3時間ごとの天気マーク
+- [x] `public/assets/live.js`。押したときだけアメダスの10分値を直近6時間ぶん取る
+- [x] 予報タブに「現在の天気の詳細を取得する」ボタン
+- [x] `meta.json` にアメダス観測所番号を追加（画面から直接取るのに要る）
+- 確認: `node --test test/live.test.js`。
+  品質フラグの扱い、3時間ファイルの割り出し、日別と時間別で天気の合議が一致することを検査
+
+## T15. 収集が公開に反映されない問題
+
+- [x] `collect.yml` から `deploy-pages.yml` を `workflow_call` で呼ぶ。
+  GITHUB_TOKEN の push は他のワークフローを起動しないため、Pages に永久に反映されなかった
+- [x] コミット手順を診断可能にし、変更の有無をステップ要約に出す
+- [ ] 次の実行で、コミットが作られない原因が要約に出るか確認する
+
 ## T12. 公開
 
 - [ ] public リポジトリ作成、初回 push

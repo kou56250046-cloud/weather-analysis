@@ -109,6 +109,92 @@ export async function fetchForecastDaily(loc, { models = MODELS, forecastDays = 
   return out;
 }
 
+/** 時間別で取る変数と、レコード上の名前の対応 */
+const HOURLY_FORECAST_VARS = {
+  temp: 'temperature_2m',
+  feels: 'apparent_temperature',
+  rh: 'relative_humidity_2m',
+  prcp: 'precipitation',
+  pop: 'precipitation_probability',
+  wind: 'wind_speed_10m',
+  cloud: 'cloud_cover',
+  code: 'weather_code',
+};
+
+/**
+ * 今日と明日の時間別予報。
+ *
+ * 日別と違って MOS の補正は当てられない。学習は日別の最高・最低気温に対して
+ * 行っているので、時間ごとの値に当てる根拠が無い。
+ * ここでは7モデルの単純平均を返し、補正していないことを画面で明示する。
+ *
+ * @returns {Promise<Array<{time:string, date:string, hour:number, models:object, ...}>>}
+ */
+export async function fetchForecastHourly(loc, { models = MODELS, forecastDays = 2 } = {}) {
+  const url = buildUrl(API.forecast, {
+    ...COMMON,
+    latitude: loc.lat,
+    longitude: loc.lon,
+    forecast_days: forecastDays,
+    hourly: Object.values(HOURLY_FORECAST_VARS),
+    models,
+  });
+  const { data } = await getJson(url, { timeoutMs: 40_000 });
+  if (!data?.hourly?.time) throw new Error('open-meteo: hourly forecast の構造が変わっている');
+
+  const h = data.hourly;
+  const out = [];
+  for (let i = 0; i < h.time.length; i++) {
+    const row = { time: h.time[i], date: h.time[i].slice(0, 10), hour: Number(h.time[i].slice(11, 13)) };
+
+    for (const [key, apiName] of Object.entries(HOURLY_FORECAST_VARS)) {
+      const values = [];
+      for (const model of models) {
+        const col = h[`${apiName}_${model}`] ?? (models.length === 1 ? h[apiName] : null);
+        const v = col?.[i];
+        if (v === null || v === undefined || !Number.isFinite(v)) continue;
+        values.push(v);
+      }
+      if (values.length === 0) { row[key] = null; row[`${key}N`] = 0; continue; }
+
+      if (key === 'code') {
+        // 天気コードは平均すると意味を失う。荒天の度合いで並べて中央を採る
+        row[key] = medianCode(values);
+      } else {
+        row[key] = round(values.reduce((s, v) => s + v, 0) / values.length, 2);
+      }
+      row[`${key}N`] = values.length;
+      if (key === 'temp' && values.length > 1) {
+        row.tempSpread = round(Math.max(...values) - Math.min(...values), 2);
+      }
+    }
+    // 1つも値の無い時刻は持たない
+    if (row.temp === null && row.prcp === null) continue;
+    out.push(row);
+  }
+  return out;
+}
+
+/**
+ * 天気コードを荒天の度合いで並べた順。小さいほど穏やか。
+ * build-derived.js の合議と同じ並びにしてある。片方だけ直すとずれる。
+ */
+const CODE_SEVERITY = [
+  0, 1, 2, 3, 45, 48, 51, 53, 55, 56, 57,
+  61, 80, 63, 81, 65, 82, 66, 67, 71, 85, 73, 75, 86, 77, 95, 96, 99,
+];
+
+/** 複数モデルの天気コードから中央の荒天度を選ぶ */
+export function medianCode(codes) {
+  if (!codes || codes.length === 0) return null;
+  const rankOf = (c) => {
+    const i = CODE_SEVERITY.indexOf(Number(c));
+    return i >= 0 ? i : CODE_SEVERITY.indexOf(3);
+  };
+  const sorted = [...codes].sort((a, b) => rankOf(a) - rankOf(b));
+  return sorted[Math.floor((sorted.length - 1) / 2)];
+}
+
 /**
  * アンサンブル。各日について分位数と降水メンバー比率を作る。
  * メンバーを全部保存すると重いので、ここで分位数まで潰す。

@@ -3,7 +3,8 @@
 // 数字の隣に必ず実績誤差を置く。「25℃」ではなく「25℃ / この先3日の実績誤差 1.1℃」。
 // 7日先の予報を1日先と同じ顔で出さないのが、この画面の一番の主張。
 import { el, fmt, fmtSigned, fmtPct, fmtDate } from './dom.js';
-import { iconForDay, describeCode } from './weather-icon.js';
+import { iconForDay, weatherIcon, describeCode } from './weather-icon.js';
+import { renderLive } from './live.js';
 import {
   frame, yAxis, xAxisLabels, line, band, bars, niceScale, legend, crosshair, refLine,
 } from './chart-svg.js';
@@ -19,11 +20,59 @@ export function renderForecast({ data, loc }) {
 
   return [
     todayPanel(today, loc),
+    livePanel(loc),
     stripPanel(days),
+    hourlyPanel(data.hourly, days),
     temperaturePanel(days),
     rainPanel(days),
     tablePanel(days),
   ];
+}
+
+// ------------------------------------------------------------------ 実況
+
+/**
+ * 押したときだけ実況を取りに行く。
+ *
+ * 常に自動で取らないのは、気象庁のサーバーを開くたびに叩かないため。
+ * それに、ここで出すのは予報ではなく観測値なので、
+ * 「今どうなっているか確かめたい」と思った瞬間に取るのが理に適っている。
+ */
+function livePanel(loc) {
+  const body = el('div');
+  let loading = false;
+
+  const button = el('button', {
+    class: 'primary',
+    onclick: async () => {
+      if (loading) return;
+      loading = true;
+      button.disabled = true;
+      button.textContent = '取得中…';
+      try {
+        await renderLive(body, loc);
+      } catch (err) {
+        console.error(err);
+        body.replaceChildren(el('p', { class: 'caveat serious' },
+          `取得できなかった: ${err.message}`));
+      } finally {
+        loading = false;
+        button.disabled = false;
+        button.textContent = '現在の天気の詳細を取得する';
+      }
+    },
+  }, '現在の天気の詳細を取得する');
+
+  return el(
+    'section', { class: 'panel' },
+    el('h2', {}, '実況を見る'),
+    el('p', { class: 'note' },
+      'ここから先は予報ではなく、観測所で実際に測られた値。'
+      + `${loc.station.name}の10分ごとの観測を直近6時間ぶん取ってくる。`
+      + '上の予報がいま当たっているかを、その場で確かめられる。'),
+    el('div', { style: { marginBottom: '12px' } }, button),
+    body,
+  );
 }
 
 // ------------------------------------------------------------------ 今日
@@ -122,6 +171,219 @@ function stripPanel(days) {
       'マークは7モデルの合議。上段が最高気温、下段が最低気温、その下が降水確率。'
       + '先の日ほど当たらないので、右へ行くほど参考程度に見る。'),
     el('div', { class: 'scroll-x' }, el('div', { class: 'daystrip' }, cards)),
+  );
+}
+
+// -------------------------------------------------------------- 時間別
+
+const DOW_SHORT = ['日', '月', '火', '水', '木', '金', '土'];
+
+/** 日付の変わり目と時刻の目盛り。時間別の図で2回使う */
+function hourAxis(f, rows) {
+  const g = el('g');
+  rows.forEach((r, i) => {
+    if (r.hour % 3 !== 0) return;
+    g.appendChild(el('text', {
+      x: f.x(i), y: f.innerH + 14, 'text-anchor': 'middle',
+      fill: r.hour === 0 ? 'var(--text-secondary)' : 'var(--text-muted)',
+      'font-size': 10.5,
+      'font-weight': r.hour === 0 ? 600 : 400,
+    }, r.hour === 0 ? `${Number(r.date.slice(8, 10))}日` : `${r.hour}`));
+  });
+  g.appendChild(el('line', {
+    x1: 0, x2: f.innerW, y1: f.innerH, y2: f.innerH,
+    stroke: 'var(--axis)', 'stroke-width': 1,
+  }));
+  f.plot.appendChild(g);
+}
+
+/** 日付が変わるところに縦線を引く */
+function dayBoundaries(f, rows) {
+  rows.forEach((r, i) => {
+    if (i === 0 || r.date === rows[i - 1].date) return;
+    f.plot.appendChild(el('line', {
+      x1: f.x(i - 0.5), x2: f.x(i - 0.5), y1: 0, y2: f.innerH,
+      stroke: 'var(--axis)', 'stroke-width': 1,
+    }));
+  });
+}
+
+/**
+ * 今日と明日の1時間ごと。
+ *
+ * この図だけ統計補正が当たっていない。補正は日別の最高・最低気温に対して
+ * 学習しているので、時間ごとの値に当てる根拠が無い。7モデルの単純平均をそのまま出す。
+ * 上の日別の値とわずかに食い違うことがあるので、そのことを画面に書く。
+ */
+function hourlyPanel(hourly, days) {
+  if (!hourly?.rows?.length) {
+    return el(
+      'section', { class: 'panel' },
+      el('h2', {}, '1時間ごと（今日と明日）'),
+      el('p', { class: 'empty' }, '時間別のデータがまだ無い'),
+    );
+  }
+
+  const rows = hourly.rows;
+  const today = days[0]?.date ?? rows[0].date;
+  const nowHour = new Date().getHours();
+  const width = Math.max(760, rows.length * 17);
+
+  const temps = rows.flatMap((r) => [r.temp, r.feels])
+    .filter((v) => v !== null && Number.isFinite(v));
+  const scale = niceScale(Math.min(...temps) - 1, Math.max(...temps) + 1, 5);
+
+  const f = frame({
+    width, height: 250,
+    pad: { top: 22, right: 16, bottom: 46, left: 42 },
+    xDomain: [0, rows.length - 1],
+    yDomain: [scale.min, scale.max],
+    label: '今日と明日の1時間ごとの気温',
+  });
+  yAxis(f, scale.ticks, { format: (v) => `${v}`, unit: '℃' });
+  dayBoundaries(f, rows);
+
+  // 今の時刻に印を付ける
+  const nowIdx = rows.findIndex((r) => r.date === today && r.hour === nowHour);
+  if (nowIdx >= 0) {
+    f.plot.appendChild(el('line', {
+      x1: f.x(nowIdx), x2: f.x(nowIdx), y1: 0, y2: f.innerH,
+      stroke: 'var(--series-2)', 'stroke-width': 2, 'stroke-dasharray': '3 3',
+    }));
+    f.plot.appendChild(el('text', {
+      x: f.x(nowIdx), y: -8, 'text-anchor': 'middle',
+      fill: 'var(--series-2)', 'font-size': 10.5, 'font-weight': 600,
+    }, 'いま'));
+  }
+
+  line(f, rows.map((r, i) => ({ x: i, y: r.feels })),
+    { stroke: 'var(--series-3)', width: 1.8, dash: '4 3' });
+  line(f, rows.map((r, i) => ({ x: i, y: r.temp })),
+    { stroke: 'var(--series-1)', width: 2.4 });
+
+  // 3時間ごとに天気アイコンを置く
+  rows.forEach((r, i) => {
+    if (r.hour % 3 !== 0 || r.code === null) return;
+    const icon = weatherIcon({ code: r.code, size: 18 });
+    icon.setAttribute('x', f.x(i) - 9);
+    icon.setAttribute('y', f.innerH + 20);
+    f.plot.appendChild(icon);
+  });
+
+  hourAxis(f, rows);
+  crosshair(f, rows, (i) => hourlyTip(rows[i]));
+
+  return el(
+    'section', { class: 'panel' },
+    el('h2', {}, '1時間ごと（今日と明日）'),
+    el('p', { class: 'note' },
+      '7モデルの単純平均。この図だけ統計補正が当たっていない。'
+      + '補正は日別の最高・最低気温に対して学習しているので、時間ごとの値に当てる根拠が無い。'
+      + 'そのため上の日別の値とわずかに食い違うことがある。'),
+    legend([
+      { label: '気温', color: 'var(--series-1)' },
+      { label: '体感温度', color: 'var(--series-3)', dash: true },
+    ]),
+    el('figure', { class: 'scroll-x' }, f.svg),
+    hourlyRainPanel(rows, width),
+    hourlyTable(rows),
+  );
+}
+
+/**
+ * 降水確率と降水量。
+ * 単位が違うので軸を2本にはしない。棒を確率、線を量にして、
+ * 量の目盛りは右端に3つだけ添える。
+ */
+function hourlyRainPanel(rows, width) {
+  const f = frame({
+    width, height: 180,
+    pad: { top: 22, right: 44, bottom: 28, left: 42 },
+    xDomain: [0, rows.length - 1],
+    yDomain: [0, 100],
+    label: '1時間ごとの降水確率と降水量',
+  });
+  yAxis(f, [0, 25, 50, 75, 100], { format: (v) => `${v}`, unit: '%' });
+  dayBoundaries(f, rows);
+
+  bars(f, rows.map((r, i) => ({ x: i, value: r.pop, tip: hourlyTip(r) })),
+    { color: 'var(--seq-250)', gap: 1 });
+
+  const maxPrcp = Math.max(...rows.map((r) => r.prcp ?? 0), 1);
+  const toPct = (mm) => (mm === null || !Number.isFinite(mm) ? null : (mm / maxPrcp) * 100);
+  line(f, rows.map((r, i) => ({ x: i, y: toPct(r.prcp) })),
+    { stroke: 'var(--series-1)', width: 2.2 });
+
+  for (const frac of [0, 0.5, 1]) {
+    f.plot.appendChild(el('text', {
+      x: f.innerW + 6, y: f.y(frac * 100) + 3.5, 'text-anchor': 'start',
+      fill: 'var(--series-1)', 'font-size': 10,
+    }, (maxPrcp * frac).toFixed(1)));
+  }
+  f.plot.appendChild(el('text', {
+    x: f.innerW + 6, y: -9, 'text-anchor': 'start',
+    fill: 'var(--series-1)', 'font-size': 10,
+  }, 'mm'));
+
+  hourAxis(f, rows);
+
+  return el(
+    'div', { style: { marginTop: '18px' } },
+    el('h2', { style: { fontSize: '13px', margin: '0 0 4px' } }, '1時間ごとの降水'),
+    el('p', { class: 'note' },
+      '棒が降水確率（左の目盛り）、線が降水量（右の目盛り）。'
+      + '降水確率を出さないモデルがあるので、確率は一部のモデルだけの平均になる。'),
+    legend([
+      { label: '降水確率', color: 'var(--seq-250)', band: true },
+      { label: '降水量', color: 'var(--series-1)' },
+    ]),
+    el('figure', { class: 'scroll-x' }, f.svg),
+  );
+}
+
+function hourlyTip(r) {
+  const dow = DOW_SHORT[new Date(`${r.date}T00:00:00+09:00`).getDay()];
+  return {
+    title: `${Number(r.date.slice(5, 7))}/${Number(r.date.slice(8, 10))}(${dow}) ${r.hour}時`,
+    rows: [
+      { k: '天気', v: describeCode(r.code).label },
+      { k: '気温', v: `${fmt(r.temp, 1)}℃` },
+      { k: '体感温度', v: `${fmt(r.feels, 1)}℃` },
+      { k: '降水確率', v: r.pop === null ? '—' : `${fmt(r.pop, 0)}%` },
+      { k: '降水量', v: `${fmt(r.prcp, 1)}mm` },
+      { k: '湿度', v: `${fmt(r.rh, 0)}%` },
+      { k: '風速', v: `${fmt(r.wind, 1)}m/s` },
+      { k: '雲量', v: `${fmt(r.cloud, 0)}%` },
+      { k: 'モデル間の開き', v: `${fmt(r.tempSpread, 1)}℃（${r.tempN}モデル）` },
+    ],
+  };
+}
+
+/** 3時間ごとの表。図から読み取れない値をここで見る */
+function hourlyTable(rows) {
+  const head = ['時刻', '天気', '気温', '体感', '降水確率', '降水量', '湿度', '風速'];
+  const picked = rows.filter((r) => r.hour % 3 === 0);
+
+  return el(
+    'details', { class: 'table-view' },
+    el('summary', {}, '3時間ごとの数値で見る'),
+    el('div', { class: 'scroll-x' }, el(
+      'table', {},
+      el('thead', {}, el('tr', {}, head.map((h) => el('th', {}, h)))),
+      el('tbody', {}, picked.map((r) => el(
+        'tr', {},
+        el('td', {}, `${Number(r.date.slice(8, 10))}日 ${r.hour}時`),
+        el('td', { class: 'cell-weather' },
+          weatherIcon({ code: r.code, size: 18 }),
+          el('span', {}, describeCode(r.code).label)),
+        el('td', {}, `${fmt(r.temp, 1)}℃`),
+        el('td', {}, `${fmt(r.feels, 1)}℃`),
+        el('td', {}, r.pop === null ? '—' : `${fmt(r.pop, 0)}%`),
+        el('td', {}, `${fmt(r.prcp, 1)}mm`),
+        el('td', {}, `${fmt(r.rh, 0)}%`),
+        el('td', {}, `${fmt(r.wind, 1)}m/s`),
+      ))),
+    )),
   );
 }
 

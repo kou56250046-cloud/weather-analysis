@@ -7,7 +7,7 @@
 // 使い方: node scripts/build-derived.js [--loc setagaya]
 import { readNdjsonDir, readJson, writeJson } from './lib/store.js';
 import {
-  LOCATIONS_PATH, fcstDir, jmaFcstDir, obsDir, archiveDir, outPath,
+  LOCATIONS_PATH, fcstDir, jmaFcstDir, obsDir, archiveDir, outPath, hourlyPath,
 } from './lib/paths.js';
 import { normalsPath } from './collect-normals.js';
 import { MODELS } from './lib/openmeteo.js';
@@ -185,6 +185,7 @@ async function buildLocation(loc, meta) {
     readNdjsonDir(archiveDir(loc.key)),
     readJson(normalsPath(loc.key)),
   ]);
+  const hourly = await readJson(hourlyPath(loc.key));
 
   // NDJSON は追記順に並ぶ。バックフィルを後から走らせると、
   // 8月・9月の次に1月〜7月が続くような並びになる。
@@ -350,7 +351,7 @@ async function buildLocation(loc, meta) {
   const offset = era5Offset(archiveRows, obsRows, 'tmax');
 
   return {
-    fcstRows, jmaRows, obsRows, archiveRows, normals,
+    fcstRows, jmaRows, obsRows, archiveRows, normals, hourly,
     scores, leak, forecast, coverageByLead, vsNormal,
     obsYearly, era5Yearly, offset,
     mosByVarLead, leadMae,
@@ -419,6 +420,15 @@ async function main() {
             };
           }),
         });
+        // 時間別は今日と明日の2日分。補正は当てていないので、そのことも渡す
+        await writeJson(outPath(`hourly-${loc.key}.json`), {
+          v: 1, loc: loc.key, label: loc.label,
+          generatedAt: nowJstIso(),
+          fetched: r.hourly?.fetched ?? null,
+          corrected: false,
+          models: MODELS,
+          rows: r.hourly?.rows ?? [],
+        });
         await writeJson(outPath(`normals-${loc.key}.json`), {
           v: 1, loc: loc.key,
           normals: r.normals,
@@ -463,6 +473,8 @@ async function main() {
         station: {
           name: l.station.name, distanceKm: l.station.distanceKm,
           alt: l.station.alt, has: l.station.has,
+          // 画面から直接アメダスの実況を取るのに使う
+          amedasCode: l.station.amedasCode ?? null,
         },
         jma: l.jma,
       })),

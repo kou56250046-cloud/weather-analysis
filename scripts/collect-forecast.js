@@ -4,9 +4,11 @@
 // 使い方:
 //   node scripts/collect-forecast.js
 //   node scripts/collect-forecast.js --dry-run     書き込まず、作るレコードを表示する
-import { MODELS, ENSEMBLE_MODELS, fetchForecastDaily, fetchEnsembleDaily } from './lib/openmeteo.js';
-import { upsertNdjson, readJson, makeId } from './lib/store.js';
-import { LOCATIONS_PATH, fcstPath } from './lib/paths.js';
+import {
+  MODELS, ENSEMBLE_MODELS, fetchForecastDaily, fetchEnsembleDaily, fetchForecastHourly,
+} from './lib/openmeteo.js';
+import { upsertNdjson, readJson, writeJson, makeId } from './lib/store.js';
+import { LOCATIONS_PATH, fcstPath, hourlyPath } from './lib/paths.js';
 import { toRunStamp, toJstDate, diffDays, monthKey } from './lib/time.js';
 import { runJob } from './lib/log.js';
 
@@ -98,6 +100,25 @@ async function main() {
         const records = buildRecords(loc, byModel, ensembleByModel, fetchedIso);
         const n = await writeRecords(loc.key, records, { dryRun });
         added += n;
+
+        // 今日と明日の時間別。履歴は残さず、最新の1枚を上書きする。
+        // 日別と違って補正を当てられないので、その旨を持たせておく
+        try {
+          const hourly = await fetchForecastHourly(loc);
+          if (!dryRun) {
+            await writeJson(hourlyPath(loc.key), {
+              v: 1,
+              loc: loc.key,
+              fetched: toRunStamp(new Date(new Date(fetchedIso).setMinutes(0, 0, 0))),
+              models: MODELS,
+              corrected: false,
+              rows: hourly,
+            });
+          }
+        } catch (err) {
+          // 時間別が取れなくても日別の予報は使える
+          errors.push(`${loc.key}/hourly: ${err.message}`);
+        }
 
         console.log(`${loc.key.padEnd(12)} ${records.length} 件生成 / ${n} 件追加`);
         if (dryRun && records.length) {

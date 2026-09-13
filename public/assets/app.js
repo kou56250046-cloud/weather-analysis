@@ -55,7 +55,7 @@ async function loadJson(name) {
 /** タブが要るファイルをまとめて読む。1つ欠けても他は出す */
 async function loadFor(tab, loc) {
   const names = {
-    forecast: [`forecast-${loc}.json`, `scores-${loc}.json`],
+    forecast: [`forecast-${loc}.json`, `scores-${loc}.json`, `hourly-${loc}.json`],
     scores: [`scores-${loc}.json`, `coef-${loc}.json`, 'leakcheck.json'],
     normals: [`normals-${loc}.json`],
     analysis: [`history-${loc}.json`, `normals-${loc}.json`],

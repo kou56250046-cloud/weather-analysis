@@ -6,6 +6,10 @@ name: collect
 # 06:00 JST  朝の最新予報だけ更新。実測と派生は回さない
 #
 # 収集スクリプトは冪等なので、同じ時間帯に2回走っても行は増えない。
+#
+# 注意: GITHUB_TOKEN で push しても他のワークフローは起動しない。
+# そのため Pages の配信をこのワークフローから直接呼ぶ。
+# deploy-pages.yml の push トリガーだけに任せると、収集の結果が永久に公開されない。
 
 on:
   schedule:
@@ -18,6 +22,11 @@ on:
         description: '実測と派生ビルドも回す'
         type: boolean
         default: true
+  # このワークフロー自体を直したときは、実際に動くか確かめる
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/collect.yml'
 
 permissions:
   contents: write
@@ -30,6 +39,8 @@ jobs:
   collect:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    outputs:
+      changed: ${{ steps.commit.outputs.changed }}
     steps:
       - uses: actions/checkout@v4
 
@@ -42,9 +53,9 @@ jobs:
       - name: 実測と派生も回すかを決める
         id: mode
         run: |
-          if [ "${{ github.event.schedule }}" = "0 21 * * *" ] && [ "${{ github.event_name }}" = "schedule" ]; then
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "${{ github.event.schedule }}" = "0 21 * * *" ]; then
             echo "full=false" >> "$GITHUB_OUTPUT"
-            echo "朝の回。予報のみ更新する" >> "$GITHUB_STEP_SUMMARY"
+            echo '朝の回。予報のみ更新する' >> "$GITHUB_STEP_SUMMARY"
           else
             echo "full=true" >> "$GITHUB_OUTPUT"
           fi
@@ -70,24 +81,55 @@ jobs:
         if: steps.mode.outputs.full == 'true'
         run: node scripts/compress-old.js
 
-      - name: 収集の結果を要約に出す
-        if: always()
+      - name: 変更があればコミットする
+        id: commit
         run: |
+          set -x
+          git status --porcelain data/ public/data/ > /tmp/changes.txt || true
+
           {
-            echo '## 収集ログ（直近5件）'
+            echo '## 収集の結果'
+            echo ''
+            echo '### 変更されたファイル'
+            echo '```'
+            if [ -s /tmp/changes.txt ]; then head -n 40 /tmp/changes.txt; else echo '（なし）'; fi
+            echo '```'
+            echo ''
+            echo '### 収集ログ（直近5件）'
             echo '```'
             tail -n 5 data/collect-log.ndjson 2>/dev/null || echo 'ログなし'
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: 変更があればコミットする
-        run: |
-          if [ -z "$(git status --porcelain data/ public/data/)" ]; then
-            echo '変更なし' >> "$GITHUB_STEP_SUMMARY"
+          if [ ! -s /tmp/changes.txt ]; then
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+            echo '変更が1つも無い。収集が空振りしている可能性がある' >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
+
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/ public/data/
+
+          # 改行だけの差分は add で正規化されて消える。その場合はここで止める
+          if git diff --cached --quiet; then
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+            echo '中身の変わったファイルは無かった' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
           git commit -m "データを更新 $(TZ=Asia/Tokyo date +%Y-%m-%d' '%H:%M)"
           git push
+          echo 'changed=true' >> "$GITHUB_OUTPUT"
+          echo "コミットした: $(git rev-parse --short HEAD)" >> "$GITHUB_STEP_SUMMARY"
+
+  # 収集がコミットしたら、そのまま Pages へ配信する。
+  # GITHUB_TOKEN の push は他のワークフローを起動しないので、ここから呼ぶ必要がある
+  deploy:
+    needs: collect
+    if: needs.collect.outputs.changed == 'true'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/deploy-pages.yml

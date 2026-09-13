@@ -10,6 +10,9 @@ on:
       - 'public/**'
       - '.github/workflows/deploy-pages.yml'
   workflow_dispatch:
+  # collect.yml から呼ばれる。GITHUB_TOKEN の push は他のワークフローを
+  # 起動しないので、収集の結果を公開するにはこの経路が要る
+  workflow_call:
 
 permissions:
   contents: read

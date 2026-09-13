@@ -12,7 +12,8 @@
 // キャッシュ名に版を付けてある。中身の持ち方を変えたら CACHE_VERSION を上げる。
 // 上げると古いキャッシュは activate 時に消える。
 
-const CACHE_VERSION = 'v1';
+// v2: 実況モジュール（live.js）と時間別データを足したので入れ直す
+const CACHE_VERSION = 'v2';
 const SHELL_CACHE = `shell-${CACHE_VERSION}`;
 const DATA_CACHE = `data-${CACHE_VERSION}`;
 
@@ -28,6 +29,7 @@ const SHELL_ASSETS = [
   './assets/chart-svg.js',
   './assets/chart-canvas.js',
   './assets/weather-icon.js',
+  './assets/live.js',
   './assets/tab-forecast.js',
   './assets/tab-scores.js',
   './assets/tab-normals.js',
@@ -67,7 +69,9 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
-  // 別オリジンには手を出さない
+  // 別オリジンには手を出さない。
+  // 「現在の天気の詳細」は気象庁と Open-Meteo を直接叩く。
+  // 押した瞬間の値が欲しいので、ここで挟んでキャッシュしてはいけない
   if (url.origin !== self.location.origin) return;
 
   if (url.pathname.includes('/data/')) {
