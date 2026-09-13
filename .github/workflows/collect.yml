@@ -81,8 +81,18 @@ jobs:
         if: steps.mode.outputs.full == 'true'
         run: node scripts/compress-old.js
 
+      # 収集の状態を必ず1枚の JSON に残す。
+      # このファイルは毎回変わるので、収集が空振りしてもコミットが立ち、
+      # Pages の配信も必ず走る。日付が止まったままになることがなくなる。
+      - name: 収集の状態を記録する
+        if: always()
+        env:
+          GITHUB_EVENT_SCHEDULE: ${{ github.event.schedule }}
+        run: node scripts/write-collect-status.js
+
       - name: 変更があればコミットする
         id: commit
+        if: always()
         run: |
           set -x
           git status --porcelain data/ public/data/ > /tmp/changes.txt || true
@@ -109,7 +119,15 @@ jobs:
 
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/ public/data/
+
+          # 途中で失敗していたら、作りかけのデータを公開してはいけない。
+          # そのときは状態の記録だけをコミットして、何が起きたかを残す
+          if [ "${{ job.status }}" = "success" ]; then
+            git add data/ public/data/
+          else
+            echo '前の手順が失敗している。状態の記録だけをコミットする' >> "$GITHUB_STEP_SUMMARY"
+            git add public/data/collect-status.json
+          fi
 
           # 改行だけの差分は add で正規化されて消える。その場合はここで止める
           if git diff --cached --quiet; then

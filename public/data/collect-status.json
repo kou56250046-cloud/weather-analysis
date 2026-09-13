@@ -1,0 +1,105 @@
+{
+  "v": 1,
+  "ranAt": "2026-09-13T20:00:48+09:00",
+  "event": "local",
+  "schedule": null,
+  "runId": null,
+  "runAttempt": null,
+  "changedCount": 0,
+  "changed": [],
+  "headSha": "b6a14e3",
+  "mtimes": {
+    "public/data/meta.json": "2026-09-13T10:46:27.168Z",
+    "public/data/forecast-setagaya.json": "2026-09-13T10:45:41.805Z",
+    "public/data/hourly-setagaya.json": "2026-09-13T10:45:41.830Z",
+    "data/collect-log.ndjson": "2026-09-13T10:46:27.177Z"
+  },
+  "lastCollect": {
+    "forecast": "2026-09-13T19:45:03+09:00",
+    "observation": "2026-09-12T10:24:25+09:00",
+    "jma-forecast": "2026-09-12T10:14:32+09:00",
+    "derive": "2026-09-13T19:46:27+09:00"
+  },
+  "recentLog": [
+    {
+      "v": 1,
+      "id": "derive|2026-09-12T12:50:57+09:00",
+      "ts": "2026-09-12T12:50:57+09:00",
+      "job": "derive",
+      "ok": true,
+      "added": 4,
+      "errors": [],
+      "durationMs": 66997
+    },
+    {
+      "v": 1,
+      "id": "derive|2026-09-12T12:53:14+09:00",
+      "ts": "2026-09-12T12:53:14+09:00",
+      "job": "derive",
+      "ok": true,
+      "added": 4,
+      "errors": [],
+      "durationMs": 66088
+    },
+    {
+      "v": 1,
+      "id": "derive|2026-09-12T12:55:22+09:00",
+      "ts": "2026-09-12T12:55:22+09:00",
+      "job": "derive",
+      "ok": true,
+      "added": 4,
+      "errors": [],
+      "durationMs": 65956
+    },
+    {
+      "v": 1,
+      "id": "derive|2026-09-12T13:04:24+09:00",
+      "ts": "2026-09-12T13:04:24+09:00",
+      "job": "derive",
+      "ok": true,
+      "added": 4,
+      "errors": [],
+      "durationMs": 76212
+    },
+    {
+      "v": 1,
+      "id": "derive|2026-09-12T14:58:50+09:00",
+      "ts": "2026-09-12T14:58:50+09:00",
+      "job": "derive",
+      "ok": true,
+      "added": 4,
+      "errors": [],
+      "durationMs": 67582
+    },
+    {
+      "v": 1,
+      "id": "derive|2026-09-12T15:12:47+09:00",
+      "ts": "2026-09-12T15:12:47+09:00",
+      "job": "derive",
+      "ok": true,
+      "added": 4,
+      "errors": [],
+      "durationMs": 62698
+    },
+    {
+      "v": 1,
+      "id": "forecast|2026-09-13T19:45:03+09:00",
+      "ts": "2026-09-13T19:45:03+09:00",
+      "job": "forecast",
+      "ok": true,
+      "added": 280,
+      "errors": [],
+      "durationMs": 8048
+    },
+    {
+      "v": 1,
+      "id": "derive|2026-09-13T19:46:27+09:00",
+      "ts": "2026-09-13T19:46:27+09:00",
+      "job": "derive",
+      "ok": true,
+      "added": 4,
+      "errors": [],
+      "durationMs": 61637
+    }
+  ]
+}
