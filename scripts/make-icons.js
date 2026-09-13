@@ -16,6 +16,7 @@ import { writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { Canvas, circle, roundedRect, union, ray } from './lib/png.js';
 import { PUBLIC_DIR } from './lib/paths.js';
+import { runIfMain } from './lib/main.js';
 
 const ICON_DIR = join(PUBLIC_DIR, 'icons');
 
@@ -140,11 +141,6 @@ async function main() {
   console.log('icon.svg                 ベクタ版');
 }
 
-if (import.meta.url === `file:///${process.argv[1].replace(/\\/g, '/')}`) {
-  main().catch((err) => {
-    console.error(err);
-    process.exitCode = 1;
-  });
-}
+runIfMain(import.meta.url, main);
 
 export { drawIcon, svgIcon };

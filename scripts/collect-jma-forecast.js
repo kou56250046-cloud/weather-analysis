@@ -15,6 +15,7 @@ import { upsertNdjson, readJson, makeId } from './lib/store.js';
 import { LOCATIONS_PATH, jmaFcstPath } from './lib/paths.js';
 import { toRunStamp, toJstDate, diffDays, monthKey } from './lib/time.js';
 import { runJob } from './lib/log.js';
+import { runIfMain } from './lib/main.js';
 
 const SCHEMA = 1;
 const MODEL = 'jma_official';
@@ -194,9 +195,4 @@ async function main() {
   });
 }
 
-if (import.meta.url === `file:///${process.argv[1].replace(/\\/g, '/')}`) {
-  main().catch((err) => {
-    console.error(err);
-    process.exitCode = 1;
-  });
-}
+runIfMain(import.meta.url, main);

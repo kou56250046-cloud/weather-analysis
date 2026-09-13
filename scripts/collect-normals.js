@@ -8,6 +8,7 @@ import { readJson, writeJson } from './lib/store.js';
 import { LOCATIONS_PATH, DATA_DIR } from './lib/paths.js';
 import { join } from 'node:path';
 import { existsSync } from 'node:fs';
+import { runIfMain } from './lib/main.js';
 
 export const normalsPath = (locKey) => join(DATA_DIR, 'normals', `${locKey}.json`);
 
@@ -43,9 +44,4 @@ async function main() {
   }
 }
 
-if (import.meta.url === `file:///${process.argv[1].replace(/\\/g, '/')}`) {
-  main().catch((err) => {
-    console.error(err);
-    process.exitCode = 1;
-  });
-}
+runIfMain(import.meta.url, main);

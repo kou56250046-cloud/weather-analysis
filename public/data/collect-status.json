@@ -1,13 +1,15 @@
 {
   "v": 1,
-  "ranAt": "2026-09-13T20:00:48+09:00",
+  "ranAt": "2026-09-13T20:05:40+09:00",
   "event": "local",
   "schedule": null,
   "runId": null,
   "runAttempt": null,
-  "changedCount": 0,
-  "changed": [],
-  "headSha": "b6a14e3",
+  "changedCount": 1,
+  "changed": [
+    "M public/data/collect-status.json"
+  ],
+  "headSha": "ac5aef9",
   "mtimes": {
     "public/data/meta.json": "2026-09-13T10:46:27.168Z",
     "public/data/forecast-setagaya.json": "2026-09-13T10:45:41.805Z",

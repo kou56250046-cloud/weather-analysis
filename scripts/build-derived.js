@@ -23,6 +23,7 @@ import { blendOne, blendRainProbability, blendInterval, log1p } from './lib/blen
 import { yearlyStats, era5Offset, normalFor } from './lib/normals.js';
 import { readCollectLog } from './lib/log.js';
 import { runJob } from './lib/log.js';
+import { runIfMain } from './lib/main.js';
 
 /** MOS を学習する連続値の変数 */
 const MOS_VARS = ['tmax', 'tmin', 'rh', 'wind'];
@@ -493,11 +494,6 @@ async function main() {
   });
 }
 
-if (import.meta.url === `file:///${process.argv[1].replace(/\\/g, '/')}`) {
-  main().catch((err) => {
-    console.error(err);
-    process.exitCode = 1;
-  });
-}
+runIfMain(import.meta.url, main);
 
 export { buildLocation, scoreAll, columnar };

@@ -13,6 +13,7 @@ import { join } from 'node:path';
 import { writeJson, readNdjson } from './lib/store.js';
 import { DATA_DIR, ROOT, outPath } from './lib/paths.js';
 import { nowJstIso } from './lib/time.js';
+import { runIfMain } from './lib/main.js';
 
 /** git の出力を取る。失敗しても全体は止めない */
 function git(args) {
@@ -69,9 +70,4 @@ async function main() {
   for (const line of changed.slice(0, 10)) console.log('  ', line);
 }
 
-if (import.meta.url === `file:///${process.argv[1].replace(/\\/g, '/')}`) {
-  main().catch((err) => {
-    console.error(err);
-    process.exitCode = 1;
-  });
-}
+runIfMain(import.meta.url, main);

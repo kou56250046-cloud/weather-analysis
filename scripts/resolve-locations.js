@@ -9,6 +9,7 @@
 import { fetchPrefCodes, fetchStations, fetchAreaTable, fetchAmedasTable } from './lib/jma.js';
 import { writeJson, readJson } from './lib/store.js';
 import { LOCATIONS_PATH } from './lib/paths.js';
+import { runIfMain } from './lib/main.js';
 
 /**
  * 対象地点。座標は市区町村役所・役場のおおよその位置（代表点）。
@@ -206,11 +207,6 @@ function pad(s, width) {
   return String(s) + ' '.repeat(Math.max(1, width - w));
 }
 
-if (import.meta.url === `file:///${process.argv[1].replace(/\\/g, '/')}`) {
-  main().catch((err) => {
-    console.error(err);
-    process.exitCode = 1;
-  });
-}
+runIfMain(import.meta.url, main);
 
 export { TARGETS, main };

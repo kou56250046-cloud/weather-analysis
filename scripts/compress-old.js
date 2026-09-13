@@ -3,6 +3,7 @@
 import { compressOld, readJson } from './lib/store.js';
 import { LOCATIONS_PATH, fcstDir, jmaFcstDir, obsDir } from './lib/paths.js';
 import { toJstDate } from './lib/time.js';
+import { runIfMain } from './lib/main.js';
 
 async function main() {
   const cfg = await readJson(LOCATIONS_PATH);
@@ -24,9 +25,4 @@ async function main() {
   console.log(`${keepFrom} 年より前を圧縮。合計 ${total} ファイル`);
 }
 
-if (import.meta.url === `file:///${process.argv[1].replace(/\\/g, '/')}`) {
-  main().catch((err) => {
-    console.error(err);
-    process.exitCode = 1;
-  });
-}
+runIfMain(import.meta.url, main);

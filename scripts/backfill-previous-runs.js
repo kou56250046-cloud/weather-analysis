@@ -16,6 +16,7 @@ import { MODELS, fetchPreviousRunsDaily } from './lib/openmeteo.js';
 import { upsertNdjson, readJson, makeId } from './lib/store.js';
 import { LOCATIONS_PATH, fcstPath } from './lib/paths.js';
 import { toJstDate, addDays, diffDays, monthKey } from './lib/time.js';
+import { runIfMain } from './lib/main.js';
 
 const SCHEMA = 1;
 const LEADS = [1, 2, 3, 4, 5, 6, 7];
@@ -146,9 +147,4 @@ async function main() {
   console.log(dryRun ? `dry-run: ${added} 件（書き込んでいない）` : `合計 ${added} 件追加、${failed} 区間が失敗`);
 }
 
-if (import.meta.url === `file:///${process.argv[1].replace(/\\/g, '/')}`) {
-  main().catch((err) => {
-    console.error(err);
-    process.exitCode = 1;
-  });
-}
+runIfMain(import.meta.url, main);

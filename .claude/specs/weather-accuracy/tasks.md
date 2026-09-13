@@ -114,7 +114,12 @@
 - [x] `collect.yml` から `deploy-pages.yml` を `workflow_call` で呼ぶ。
   GITHUB_TOKEN の push は他のワークフローを起動しないため、Pages に永久に反映されなかった
 - [x] コミット手順を診断可能にし、変更の有無をステップ要約に出す
-- [ ] 次の実行で、コミットが作られない原因が要約に出るか確認する
+- [x] 原因を特定した。スクリプトの起動判定が Linux で成立せず、
+  ランナーでは全スクリプトが何もせず終了コード 0 で終わっていた
+- [x] `lib/main.js` の `runIfMain` に統一し、全11スクリプトを直した
+- [x] `public/data/collect-status.json` に毎回の状態を残す
+- 確認: `node --test test/main-guard.test.js`。
+  子プロセスとして起動して main() が実際に動くことまで検査する
 
 ## T12. 公開
 
