@@ -13,7 +13,8 @@
 // 上げると古いキャッシュは activate 時に消える。
 
 // v2: 実況モジュール（live.js）と時間別データを足したので入れ直す
-const CACHE_VERSION = 'v2';
+// v3: 解説タブ（tab-method.js）を足したので入れ直す
+const CACHE_VERSION = 'v3';
 const SHELL_CACHE = `shell-${CACHE_VERSION}`;
 const DATA_CACHE = `data-${CACHE_VERSION}`;
 
@@ -34,6 +35,7 @@ const SHELL_ASSETS = [
   './assets/tab-scores.js',
   './assets/tab-normals.js',
   './assets/tab-analysis.js',
+  './assets/tab-method.js',
   './icons/icon-192.png',
   './icons/icon.svg',
 ];

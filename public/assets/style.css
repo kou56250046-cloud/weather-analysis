@@ -600,3 +600,176 @@ td.cell-weather .wicon {
 .offline-bar {
   border-left-color: var(--warning);
 }
+
+/* ------------------------------------------------------------------ 解説 */
+
+/*
+ * 数式は MathJax も KaTeX も使わない（CDN 不使用の制約）。
+ * この画面に出る式は分数・平方根・総和・上下付きで足りるので、
+ * その4つだけを CSS で組む。画像にはしない。読み上げと選択コピーができなくなる。
+ */
+
+.formula {
+  font-family: "Cambria Math", Cambria, "Latin Modern Math", Georgia, "Times New Roman", serif;
+  font-size: 15px;
+  font-feature-settings: "tnum" 1;
+  line-height: 2.1;
+  border-left: 3px solid var(--series-1);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 12px 16px;
+  margin: 12px 0;
+  overflow-x: auto;
+  /* 式は折り返さない。折り返すと意味が変わって読めるため、横に逃がす */
+  white-space: nowrap;
+
+  /*
+   * 横に続きがあることを影で示す。スクロールし切ると消える。
+   * 地の色の板（local）で影（scroll）を隠す、という重ね方で JS を使わずに済ませる。
+   * 見切れているのに気づけないと「これで式の全部だ」と誤読される。
+   */
+  background:
+    linear-gradient(to right, var(--plane) 40%, transparent) left center / 28px 100% no-repeat local,
+    linear-gradient(to left, var(--plane) 40%, transparent) right center / 28px 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, var(--axis), transparent) left center / 14px 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, var(--axis), transparent) right center / 14px 100% no-repeat scroll,
+    var(--plane);
+}
+
+/* キーボードで式をスクロールできるようにしてあるので、あたっている場所を示す */
+.formula:focus-visible {
+  outline: 2px solid var(--series-1);
+  outline-offset: 2px;
+}
+
+.formula.wrap { white-space: normal; }
+
+.formula .lead {
+  display: block;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  white-space: normal;
+}
+
+/* 添字は式の意味を決める。相対指定だけだと狭い画面で 10px を切るので下限を置く */
+.formula sub, .formula sup { font-size: max(0.72em, 11px); }
+
+/* 分数。上段の下に罫を引いて割り算に見せる */
+.formula .frac {
+  display: inline-flex;
+  flex-direction: column;
+  vertical-align: middle;
+  text-align: center;
+  margin: 0 0.22em;
+}
+.formula .frac > .num {
+  border-bottom: 1px solid currentColor;
+  padding: 0 0.35em 0.1em;
+}
+.formula .frac > .den { padding: 0.1em 0.35em 0; }
+
+/* 平方根。SVG の記号を中身の高さまで引き伸ばし、上線を引いた箱を右に並べる */
+.formula .sqrt { display: inline-flex; align-items: stretch; vertical-align: middle; }
+.formula .sqrt > .radical {
+  flex: none;
+  width: 11px;
+  align-self: stretch;
+  margin-right: -1px;
+  overflow: visible;
+}
+.formula .sqrt > .radicand {
+  border-top: 1px solid currentColor;
+  padding: 0 0.3em;
+}
+
+/* 総和。Σ の上下に添字を積む */
+.formula .bigop {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  vertical-align: middle;
+  margin: 0 0.2em;
+  line-height: 1.05;
+}
+.formula .bigop > .op { font-size: 1.45em; }
+.formula .bigop > .over, .formula .bigop > .under {
+  font-size: 0.62em;
+  color: var(--text-secondary);
+}
+
+/* 記号の説明 */
+.symbols {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 3px 14px;
+  margin: 8px 0 0;
+  font-size: 12.5px;
+}
+.symbols dt {
+  font-family: "Cambria Math", Cambria, Georgia, serif;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.symbols dd { margin: 0; color: var(--text-secondary); }
+
+/* 式の直後に置く実績値 */
+.actual {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  border-left: 2.5px solid var(--good);
+  padding: 4px 0 4px 10px;
+  margin: 10px 0;
+}
+.actual b { color: var(--text-primary); font-weight: 650; }
+
+/* 章へ飛ぶボタンの並び */
+.method-toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* 章の終わりの「目次へ戻る」。長いページなので下まで読んでも戻れるようにする */
+.chapter-end {
+  margin-top: 18px;
+  padding-top: 10px;
+  border-top: 1px solid var(--grid);
+}
+
+/*
+ * ヘッダが sticky なので、章へ飛ぶと見出しがその下に潜り込む。
+ * ヘッダの高さぶん手前で止める。
+ */
+.panel[id^="ch-"] { scroll-margin-top: 100px; }
+
+/* 画面には出さず、読み上げにだけ渡す */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.method-body h3 {
+  font-size: 13.5px;
+  margin: 22px 0 6px;
+  color: var(--text-primary);
+}
+.method-body h3:first-child { margin-top: 4px; }
+.method-body p { margin: 8px 0; color: var(--text-secondary); font-size: 13px; }
+.method-body ul { margin: 8px 0; padding-left: 20px; color: var(--text-secondary); font-size: 13px; }
+.method-body li { margin: 3px 0; }
+.method-body strong { color: var(--text-primary); }
+
+@media (max-width: 560px) {
+  .symbols { grid-template-columns: 1fr; gap: 1px 0; }
+  .symbols dd { margin-bottom: 6px; }
+  .formula { font-size: 14px; padding: 10px 12px; }
+}

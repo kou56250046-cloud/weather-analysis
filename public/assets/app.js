@@ -1,4 +1,4 @@
-// 画面の組み立て。タブ4枚と地点切り替え。
+// 画面の組み立て。タブ5枚と地点切り替え。
 //
 // この画面の主張は「予報は外れる。どれくらい外れるかを先に言う」。
 // なので、予報の数字の隣には必ず実績誤差を置く。精度を伏せた予報は出さない。
@@ -7,12 +7,14 @@ import { renderForecast } from './tab-forecast.js';
 import { renderScores } from './tab-scores.js';
 import { renderNormals } from './tab-normals.js';
 import { renderAnalysis } from './tab-analysis.js';
+import { renderMethod } from './tab-method.js';
 
 const TABS = [
   { id: 'forecast', label: '予報', render: renderForecast },
   { id: 'scores', label: '成績', render: renderScores },
   { id: 'normals', label: '平年比', render: renderNormals },
   { id: 'analysis', label: '分析', render: renderAnalysis },
+  { id: 'method', label: '解説', render: renderMethod },
 ];
 
 const state = {
@@ -59,6 +61,9 @@ async function loadFor(tab, loc) {
     scores: [`scores-${loc}.json`, `coef-${loc}.json`, 'leakcheck.json'],
     normals: [`normals-${loc}.json`],
     analysis: [`history-${loc}.json`, `normals-${loc}.json`],
+    // 解説は本文が静的で、データは式の直後に実績値を差し込むためだけに使う。
+    // 読めなければその行が消えるだけで、本文は最後まで出る
+    method: [`scores-${loc}.json`, `coef-${loc}.json`, 'leakcheck.json'],
   }[tab];
 
   const results = await Promise.allSettled(names.map(loadJson));
