@@ -46,11 +46,16 @@ export function groupForecasts(rows) {
  * 行ごとに変わってしまう。その行の他モデルの平均で埋め、列は固定する。
  * 埋めたことを示す列は作らない。サンプル数に対して変数が増えすぎる。
  *
- * @returns {{X:number[][], y:number[], dates:string[], models:string[], filled:number}}
+ * transform を渡すと y も変換される。変換後の y で「1mm以上か」を判定すると
+ * 別の閾値を学習してしまうので、変換前の実測も yRaw として持っておく。
+ * ラベルを作る側（fitRainProbability）は必ず yRaw を見る。
+ *
+ * @returns {{X:number[][], y:number[], yRaw:number[], dates:string[], models:string[], filled:number}}
  */
 export function buildSamples(grouped, obsByDate, { variable, lead, models, transform = null }) {
   const X = [];
   const y = [];
+  const yRaw = [];
   const dates = [];
   let filled = 0;
 
@@ -82,9 +87,10 @@ export function buildSamples(grouped, obsByDate, { variable, lead, models, trans
     const [s, c] = seasonTerms(target);
     X.push([1, ...(transform ? feats.map(transform) : feats), s, c]);
     y.push(transform ? transform(raw) : raw);
+    yRaw.push(raw);
     dates.push(target);
   }
-  return { X, y, dates, models, filled };
+  return { X, y, yRaw, dates, models, filled };
 }
 
 /**
@@ -293,10 +299,19 @@ export function fitContinuousMos(samples, { lambdas = LAMBDAS } = {}) {
  */
 export const RETRAIN_EVERY_ITERATIVE = 28;
 
-/** 降水の有無の確率を学習する */
+/**
+ * 降水の有無の確率を学習する。
+ *
+ * 閾値は必ず変換前の実測（yRaw）に当てる。降水の samples は説明変数も目的変数も
+ * log1p してあるので、変換後の y に 1.0 を当てると log1p(prcp) >= 1.0、
+ * すなわち prcp >= 1.72mm を学習することになる。
+ * 採点側（probabilityScores）は生の 1.0mm で判定するので、学習している事象と
+ * 採点している事象が食い違い、確率が系統的に過小へ寄る。
+ */
 export function fitRainProbability(samples, { threshold = RAIN_THRESHOLD_MM, lambda = 0.5 } = {}) {
   if (samples.X.length < MIN_TRAIN + 10) return null;
-  const binary = samples.y.map((v) => (v >= threshold ? 1 : 0));
+  const amounts = samples.yRaw ?? samples.y;
+  const binary = amounts.map((v) => (v >= threshold ? 1 : 0));
   const inner = { ...samples, y: binary };
 
   const wf = walkForward(
@@ -322,7 +337,7 @@ export function fitRainProbability(samples, { threshold = RAIN_THRESHOLD_MM, lam
     predictions: wf.predictions,
     dates: samples.dates,
     observed: binary,
-    observedAmount: samples.y,
+    observedAmount: amounts,
   };
 }
 

@@ -111,9 +111,24 @@ function buildMosForecastRows(mosByVarLead, lead) {
       const p = fit.predictions[i];
       if (p === null) return;
       if (!byDate.has(date)) byDate.set(date, { target: date });
-      byDate.get(date)[v] = v === 'prcp' ? p : p;
+      byDate.get(date)[v] = p;
     });
   }
+
+  // 較正後の降水確率。ロジスティックの前向き検証予測を pop として採点へ回す。
+  // ここを通さないと blend:mos の pop 行が生成されず、成績タブの信頼度図は
+  // 較正前のアンサンブル比率（単独モデルの行）へ落ちる。
+  // 画面に「較正済み」と書いてある確率と、採点している確率が別物になってしまう。
+  const rainFit = mosByVarLead.get(`rain|${lead}`);
+  if (rainFit) {
+    rainFit.dates.forEach((date, i) => {
+      const p = rainFit.predictions[i];
+      if (p === null) return;
+      if (!byDate.has(date)) byDate.set(date, { target: date });
+      byDate.get(date).pop = p;
+    });
+  }
+
   return [...byDate.values()];
 }
 
@@ -233,7 +248,19 @@ async function buildLocation(loc, meta) {
       mosByVarLead.set(`prcp|${lead}`, prcpFit);
     }
     const rainFit = fitRainProbability(prcpSamples);
-    if (rainFit) mosByVarLead.set(`rain|${lead}`, rainFit);
+    if (rainFit) {
+      mosByVarLead.set(`rain|${lead}`, rainFit);
+      // 確率も前向き検証であることを示せるよう、気温と同じ形で記録する。
+      // ロジスティックは MAE を持たないので、そこだけ null になる
+      leak.push({
+        loc: loc.key, variable: 'rain', lead,
+        n: rainFit.n, lambda: rainFit.lambda,
+        evaluatedFrom: rainFit.walkForward.evaluatedFrom,
+        lastTrainTo: rainFit.walkForward.lastTrainTo,
+        retrains: rainFit.walkForward.retrains,
+        mae: null,
+      });
+    }
   }
 
   // --- 成績
