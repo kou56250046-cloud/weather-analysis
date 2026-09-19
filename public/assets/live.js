@@ -9,7 +9,7 @@
 import { el, replace, fmt, fmtPct } from './dom.js';
 import { weatherIcon, describeCode, inferKind, KIND_LABEL } from './weather-icon.js';
 import {
-  frame, yAxis, xAxisLabels, line, bars, niceScale, legend, crosshair,
+  frame, yAxis, line, bars, niceScale, legend, crosshair,
 } from './chart-svg.js';
 
 const AMEDAS = 'https://www.jma.go.jp/bosai/amedas/data';
@@ -17,6 +17,8 @@ const OPEN_METEO = 'https://api.open-meteo.com/v1/forecast';
 
 /** 何時間ぶん遡るか */
 const HOURS_BACK = 6;
+/** 何時間先まで出すか */
+const HOURS_AHEAD = 6;
 
 /** 観測値は [値, 品質フラグ] の形で来る。0 以外は使わない */
 function val(entry, key) {
@@ -43,7 +45,7 @@ function fileKeys(latest, hoursBack) {
   const keys = [];
   // 3時間の区切りに丸めてから、必要な数だけ戻る
   const base = new Date(latest);
-  base.setMinutes(0, 0, 0);
+  base.setUTCMinutes(0, 0, 0);
   const blocks = Math.ceil(hoursBack / 3) + 1;
   for (let i = 0; i < blocks; i++) {
     const t = new Date(base.getTime() - i * 3 * 3600_000);
@@ -108,15 +110,83 @@ export async function fetchAmedasRecent(code, { hoursBack = HOURS_BACK } = {}) {
   return { rows, latest };
 }
 
-/** 押した瞬間の天気コードと気温。アメダスは天気を出さないので、こちらで補う */
+/**
+ * 押した瞬間の天気コードと気温。アメダスは天気を出さないので、こちらで補う。
+ * この先の時間別予報も同じ呼び出しで取る。通信を増やさない。
+ * @returns {Promise<{current:object, hourly:object|Array}>}
+ */
 export async function fetchCurrent(loc) {
   const url = `${OPEN_METEO}?latitude=${loc.lat}&longitude=${loc.lon}`
     + '&timezone=Asia%2FTokyo&wind_speed_unit=ms'
     + '&current=temperature_2m,apparent_temperature,relative_humidity_2m,'
-    + 'precipitation,weather_code,wind_speed_10m,wind_direction_10m,cloud_cover,is_day';
-  const data = await (await fetchOrThrow(url)).json();
+    + 'precipitation,weather_code,wind_speed_10m,wind_direction_10m,cloud_cover,is_day'
+    + `&hourly=${HOURLY_KEYS.join(',')}`
+    // 現在の正時から数える。アメダスの遅れに備えて多めに取り、後で6本に切る
+    + `&forecast_hours=${HOURS_AHEAD + 4}`;
+  return splitForecast(await (await fetchOrThrow(url)).json());
+}
+
+const HOURLY_KEYS = [
+  'temperature_2m', 'precipitation', 'precipitation_probability',
+  'weather_code', 'wind_speed_10m', 'wind_direction_10m',
+];
+
+/** 現在値と時間別に分ける。時間別が壊れていても現在値は使う */
+function splitForecast(data) {
   if (!data?.current) throw new Error('現在の天気を読めなかった');
-  return data.current;
+  const h = data.hourly;
+  const ok = Array.isArray(h?.time)
+    && HOURLY_KEYS.every((k) => Array.isArray(h[k]) && h[k].length === h.time.length);
+  return { current: data.current, hourly: ok ? h : [] };
+}
+
+/** Open-Meteo の時刻は timezone=Asia/Tokyo の壁時計。'YYYY-MM-DDThh:mm' を JST として読む */
+function parseLocal(s) {
+  const d = new Date(`${s}:00+09:00`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/** 度（0〜360）をアメダスと同じ 1〜16 の方位番号に直す。北が 16 */
+function degToDir16(deg) {
+  if (deg === null || deg === undefined || !Number.isFinite(deg)) return null;
+  const n = Math.round((((deg % 360) + 360) % 360) / 22.5) % 16;
+  return n === 0 ? 16 : n;
+}
+
+/**
+ * 時間別予報を行に直し、after より後を先頭から count 本返す。
+ * 足りなければ取れた分だけ返す。欠けた値は null のまま。
+ */
+function nextHours(hourly, after, count = HOURS_AHEAD) {
+  const times = hourly?.time;
+  if (!Array.isArray(times) || !after) return [];
+  const num = (k, i) => {
+    const v = hourly[k]?.[i];
+    return v === null || v === undefined || !Number.isFinite(v) ? null : v;
+  };
+  const out = [];
+  for (let i = 0; i < times.length && out.length < count; i++) {
+    const at = parseLocal(times[i]);
+    if (!at || at <= after) continue;
+    out.push({
+      at,
+      temp: num('temperature_2m', i),
+      prcp: num('precipitation', i),
+      pop: num('precipitation_probability', i),
+      code: num('weather_code', i),
+      wind: num('wind_speed_10m', i),
+      // 風速 0 はアメダスと同じく静穏（0）にする。方位を出さない
+      windDirection: num('wind_speed_10m', i) === 0 ? 0 : degToDir16(num('wind_direction_10m', i)),
+    });
+  }
+  return out;
+}
+
+/** 気象庁「雨雲の動き」を地点付近で開くリンク先。座標は小数3桁に丸める */
+function radarUrl(loc) {
+  return 'https://www.jma.go.jp/bosai/nowc/'
+    + `#zoom:10/lat:${loc.lat.toFixed(3)}/lon:${loc.lon.toFixed(3)}`
+    + '/colordepth:normal/elements:hrpns&slmcs';
 }
 
 async function fetchOrThrow(url) {
@@ -134,8 +204,10 @@ function windDirName(v) {
   return DIRS[Math.round(v)] ?? '—';
 }
 
+/** 時刻を JST の hh:mm で出す。ブラウザのタイムゾーンに依らない */
 function timeLabel(d) {
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const j = new Date(d.getTime() + 9 * 3600_000);
+  return `${pad(j.getUTCHours())}:${pad(j.getUTCMinutes())}`;
 }
 
 // ------------------------------------------------------------------ 表示
@@ -164,17 +236,22 @@ export async function renderLive(container, loc) {
   if (amedas.status === 'rejected' && current.status === 'rejected') {
     replace(container, el('p', { class: 'caveat serious' },
       `実況を取れなかった: ${amedas.reason.message}`),
-    el('p', { class: 'note' }, 'オフラインか、気象庁側の仕様が変わった可能性がある。'));
+    el('p', { class: 'note' }, 'オフラインか、気象庁側の仕様が変わった可能性がある。'),
+    radarLink(loc));
     return;
   }
 
   const parts = [];
-  const cur = current.status === 'fulfilled' ? current.value : null;
+  const cur = current.status === 'fulfilled' ? current.value.current : null;
   const obs = amedas.status === 'fulfilled' ? amedas.value : null;
+  // 起点は最新の観測時刻。アメダスが取れなければモデルの現在時刻
+  const after = obs?.latest ?? (cur ? parseLocal(cur.time) : null);
+  const fc = current.status === 'fulfilled' ? nextHours(current.value.hourly, after) : [];
 
   parts.push(nowPanel(cur, obs, loc));
+  parts.push(nextPanel(fc, loc));
   if (obs) {
-    parts.push(...seriesPanels(obs));
+    parts.push(...seriesPanels(obs, fc));
     parts.push(tablePanel(obs));
   } else {
     parts.push(el('p', { class: 'caveat' },
@@ -197,7 +274,7 @@ function nowPanel(cur, obs, loc) {
     'div', { class: 'tile tile-weather' },
     el('span', { class: 'label' }, '今の天気'),
     el('div', { class: 'weather-row' },
-      weatherIcon({ code: cur?.weather_code ?? null, kind: cur ? null : kind.kind, size: 40, label: name }),
+      decorative(weatherIcon({ code: cur?.weather_code ?? null, kind: cur ? null : kind.kind, size: 40, label: name })),
       el('span', { class: 'weather-name' }, name)),
     el('div', { class: 'sub' }, cur ? 'モデルの現在値' : '降水量からの推定'),
   ));
@@ -253,39 +330,200 @@ function tile(label, value, unit, sub) {
   );
 }
 
+/** この先6時間。1時間ごとの札を並べる */
+function nextPanel(fc, loc) {
+  if (fc.length === 0) {
+    return el(
+      'section', { class: 'panel' },
+      el('h2', {}, 'この先6時間'),
+      el('p', { class: 'caveat' }, 'この先の予報は取れなかった。'),
+      radarLink(loc),
+    );
+  }
+
+  const tiles = fc.map((r) => {
+    const known = r.code !== null;
+    // コードが無い時間は降水量と確率から推定する。確率は 0〜1 で渡す。
+    // どちらも無ければ材料が無いので推定しない（晴れに化けさせない）
+    const guessable = r.prcp !== null || r.pop !== null;
+    const kind = known || !guessable
+      ? describeCode(r.code)
+      : { kind: inferKind({ prcp: r.prcp, pop: r.pop !== null ? r.pop / 100 : null }), label: null };
+    const name = (kind.label ?? KIND_LABEL[kind.kind]) + (known || !guessable ? '' : '（推定）');
+    return el(
+      'div', { class: 'tile tile-weather' },
+      el('span', { class: 'label' }, `${timeLabel(r.at)} の予報`),
+      el('div', { class: 'weather-row' },
+        decorative(weatherIcon({ code: r.code, kind: known ? null : kind.kind, size: 32, label: name })),
+        el('span', { class: 'weather-name' }, name)),
+      el('div', {},
+        el('span', { class: 'value' }, fmt(r.temp, 1)), el('span', { class: 'unit' }, '℃')),
+      // Open-Meteo の降水量はその時刻までの1時間の合計
+      el('div', { class: 'sub' },
+        `降水 ${fmt(r.prcp, 1)}mm（前1時間）・確率 ${r.pop !== null ? `${fmt(r.pop, 0)}%` : '—'}`),
+      el('div', { class: 'sub' }, `風 ${fmt(r.wind, 1)}m/s ${windDirName(r.windDirection)}`),
+    );
+  });
+
+  return el(
+    'section', { class: 'panel' },
+    el('h2', {}, 'この先6時間'),
+    el('p', { class: 'note' },
+      'Open-Meteo の既定モデルによる1時間ごとの予報。'
+      + '統計補正はしていないので、予報タブの値とは少し食い違う。'
+      + (fc.length < HOURS_AHEAD ? `${fc.length}時間分だけ取れた。` : '')),
+    el('div', { class: 'tiles' }, tiles),
+    radarLink(loc),
+  );
+}
+
+/** 雨雲の動きは気象庁のページで見てもらう。レーダーは自前で描かない */
+function radarLink(loc) {
+  return el('p', { class: 'note' },
+    el('a', { href: radarUrl(loc), target: '_blank', rel: 'noopener' },
+      '気象庁 雨雲の動き（この地点付近・別タブで開く）'),
+    ' で雨雲レーダーを見られる。');
+}
+
+/** 隣に名前を書いてあるアイコンは読み上げない。同じ名前が2回読まれるため */
+function decorative(icon) {
+  icon.setAttribute('aria-hidden', 'true');
+  return icon;
+}
+
 function sumOf(rows, key) {
   const v = rows.map((r) => r[key]).filter((x) => x !== null && Number.isFinite(x));
   return v.length ? Math.round(v.reduce((s, x) => s + x, 0) * 10) / 10 : null;
 }
 
-/** 気温と風、降水の6時間の流れ */
-function seriesPanels(obs) {
+/**
+ * 実測（10分値）と予報（正時）を同じ横軸に並べる。
+ * 横軸は最初の観測からの10分刻みの番号。実測も予報も時刻から番号を振る。
+ * アメダスのファイルが1本取れないと行が抜けるので、行の順番では置かない。
+ * 抜けた枠は obs が null になり、線はそこで切れる。
+ */
+function timeline(rows, fc) {
+  const t0 = rows[0].at.getTime();
+  const idx = (at) => Math.round((at.getTime() - t0) / 600_000);
+  const nowIdx = idx(rows.at(-1).at);
+  const fcAt = fc.map((r) => ({ ...r, i: idx(r.at) }));
+  const last = fcAt.length ? fcAt.at(-1).i : nowIdx;
+  const byIdx = new Map(rows.map((r) => [idx(r.at), r]));
+  const slots = [];
+  for (let i = 0; i <= last; i++) {
+    slots.push({ at: new Date(t0 + i * 600_000), obs: byIdx.get(i) ?? null });
+  }
+  return { slots, fcAt, nowIdx };
+}
+
+/** 実測の点。抜けた枠は null にして線を切る */
+function obsPoints(tl, key) {
+  return tl.slots.slice(0, tl.nowIdx + 1).map((s, i) => ({ x: i, y: s.obs ? s.obs[key] : null }));
+}
+
+/**
+ * 横軸の目盛り。正時に置く。
+ * 札の時刻と揃えるため、10分刻みの半端な時刻には置かない。予報の終わりの正時にも必ず付く。
+ */
+function timeAxis(f, slots) {
+  const g = el('g');
+  slots.forEach((s, i) => {
+    if (s.at.getUTCMinutes() !== 0) return; // JST と UTC は整数時間ずれるので、分は同じ
+    g.appendChild(el('text', {
+      x: f.x(i), y: f.innerH + 16, 'text-anchor': 'middle',
+      fill: 'var(--text-muted)', 'font-size': 10.5,
+    }, timeLabel(s.at)));
+  });
+  g.appendChild(el('line', {
+    x1: 0, x2: f.innerW, y1: f.innerH, y2: f.innerH,
+    stroke: 'var(--axis)', 'stroke-width': 1,
+  }));
+  f.plot.appendChild(g);
+}
+
+/** カーソルの札。実測の枠は観測値、未来側はいちばん近い正時の予報。抜けた枠は出さない */
+function slotTip(tl, i) {
+  const s = tl.slots[i];
+  if (s.obs) return tipFor(s.obs);
+  if (i <= tl.nowIdx) return null;
+  let best = null;
+  for (const r of tl.fcAt) {
+    if (!best || Math.abs(r.i - i) < Math.abs(best.i - i)) best = r;
+  }
+  return best ? fcTipFor(best) : null;
+}
+
+/** 最新の観測時刻に「現在」の印を付ける */
+function nowMark(f, idx) {
+  f.plot.appendChild(el('line', {
+    x1: f.x(idx), x2: f.x(idx), y1: 0, y2: f.innerH,
+    stroke: 'var(--series-2)', 'stroke-width': 2, 'stroke-dasharray': '3 3',
+  }));
+  f.plot.appendChild(el('text', {
+    x: f.x(idx), y: -8, 'text-anchor': 'middle',
+    fill: 'var(--series-2)', 'font-size': 10.5, 'font-weight': 600,
+  }, '現在'));
+}
+
+/**
+ * 実測と予報を並べる折れ線。予報が無ければ実測だけ。
+ * 縦軸は両方の値から決める。破線が枠からはみ出さないように。
+ */
+function timelineChart(obs, fc, { key, unit, zeroBased = false, label }) {
+  const tl = timeline(obs.rows, fc);
+  const values = [...obs.rows.map((r) => r[key]), ...fc.map((r) => r[key])]
+    .filter((v) => v !== null && Number.isFinite(v));
+  const scale = zeroBased
+    ? niceScale(0, Math.max(...values, 1) * 1.2, 4)
+    : niceScale(Math.min(...values) - 0.5, Math.max(...values) + 0.5, 4);
+  const f = frame({
+    width: 720, height: zeroBased ? 170 : 200,
+    pad: { top: 22, right: 16, bottom: 28, left: 42 },
+    xDomain: [0, tl.slots.length - 1],
+    yDomain: [scale.min, scale.max],
+    label,
+  });
+  yAxis(f, scale.ticks, { format: (v) => `${v}`, unit });
+  if (tl.fcAt.length) nowMark(f, tl.nowIdx);
+  line(f, obsPoints(tl, key), { stroke: 'var(--series-1)', width: 2.4 });
+  // 実測と予報は別物なので、線でつながない
+  line(f, tl.fcAt.map((r) => ({ x: r.i, y: r[key] })),
+    { stroke: 'var(--series-1)', width: 2, dash: '5 4' });
+  timeAxis(f, tl.slots);
+  crosshair(f, tl.slots, (i) => slotTip(tl, i));
+  return f;
+}
+
+function fcLegend(fc) {
+  return fc.length
+    ? legend([
+      { label: '実測', color: 'var(--series-1)' },
+      { label: '予報（統計補正なし）', color: 'var(--series-1)', dash: true },
+    ])
+    : null;
+}
+
+/** 気温と風、降水の6時間の流れ。気温と風はこの先の予報もつなげる */
+function seriesPanels(obs, fc = []) {
   const rows = obs.rows;
   const out = [];
+  const ahead = fc.length > 0;
 
-  // --- 気温と湿度
+  // --- 気温
   const temps = rows.map((r) => r.temp).filter((v) => v !== null);
   if (temps.length >= 2) {
-    const scale = niceScale(Math.min(...temps) - 0.5, Math.max(...temps) + 0.5, 4);
-    const f = frame({
-      width: 720, height: 200,
-      pad: { top: 22, right: 16, bottom: 28, left: 42 },
-      xDomain: [0, rows.length - 1],
-      yDomain: [scale.min, scale.max],
-      label: '直近6時間の気温',
+    const f = timelineChart(obs, fc, {
+      key: 'temp', unit: '℃',
+      label: ahead ? '直近6時間の気温とこの先の予報' : '直近6時間の気温',
     });
-    yAxis(f, scale.ticks, { format: (v) => `${v}`, unit: '℃' });
-    line(f, rows.map((r, i) => ({ x: i, y: r.temp })), { stroke: 'var(--series-1)', width: 2.4 });
-    xAxisLabels(f, rows, {
-      every: Math.max(1, Math.round(rows.length / 7)),
-      format: (r) => timeLabel(r.at),
-    });
-    crosshair(f, rows, (i) => tipFor(rows[i]));
 
     out.push(el(
       'section', { class: 'panel' },
-      el('h2', {}, '気温の6時間'),
-      el('p', { class: 'note' }, '10分ごとの観測値。予報ではなく、実際に観測された気温。'),
+      el('h2', {}, ahead ? '気温 直近6時間とこの先6時間' : '気温の6時間'),
+      el('p', { class: 'note' },
+        '10分ごとの観測値。予報ではなく、実際に観測された気温。'
+        + (ahead ? '破線は1時間ごとの予報で、統計補正はしていない。' : '')),
+      fcLegend(fc),
       el('figure', { class: 'scroll-x' }, f.svg),
     ));
   }
@@ -295,20 +533,18 @@ function seriesPanels(obs) {
   if (rain.length >= 2) {
     const maxRain = Math.max(...rain, 0.5);
     const scale = niceScale(0, maxRain * 1.15, 4);
+    const tl = timeline(rows, []);
     const f = frame({
       width: 720, height: 170,
       pad: { top: 22, right: 16, bottom: 28, left: 52 },
-      xDomain: [0, rows.length - 1],
+      xDomain: [0, tl.slots.length - 1],
       yDomain: [scale.min, scale.max],
       label: '直近6時間の降水量',
     });
     yAxis(f, scale.ticks, { format: (v) => `${v}`, unit: 'mm' });
-    bars(f, rows.map((r, i) => ({ x: i, value: r.prcp10m, tip: tipFor(r) })),
+    bars(f, tl.slots.map((s, i) => ({ x: i, value: s.obs?.prcp10m ?? null, tip: s.obs ? tipFor(s.obs) : null })),
       { color: 'var(--series-1)', gap: 1 });
-    xAxisLabels(f, rows, {
-      every: Math.max(1, Math.round(rows.length / 7)),
-      format: (r) => timeLabel(r.at),
-    });
+    timeAxis(f, tl.slots);
 
     const total = sumOf(rows, 'prcp10m');
     out.push(el(
@@ -325,28 +561,19 @@ function seriesPanels(obs) {
   // --- 風
   const winds = rows.map((r) => r.wind).filter((v) => v !== null);
   if (winds.length >= 2) {
-    const scale = niceScale(0, Math.max(...winds, 1) * 1.2, 4);
-    const f = frame({
-      width: 720, height: 170,
-      pad: { top: 22, right: 16, bottom: 28, left: 42 },
-      xDomain: [0, rows.length - 1],
-      yDomain: [scale.min, scale.max],
-      label: '直近6時間の風速',
+    const f = timelineChart(obs, fc, {
+      key: 'wind', unit: 'm/s', zeroBased: true,
+      label: ahead ? '直近6時間の風速とこの先の予報' : '直近6時間の風速',
     });
-    yAxis(f, scale.ticks, { format: (v) => `${v}`, unit: 'm/s' });
-    line(f, rows.map((r, i) => ({ x: i, y: r.wind })), { stroke: 'var(--series-1)', width: 2.4 });
-    xAxisLabels(f, rows, {
-      every: Math.max(1, Math.round(rows.length / 7)),
-      format: (r) => timeLabel(r.at),
-    });
-    crosshair(f, rows, (i) => tipFor(rows[i]));
 
     out.push(el(
       'section', { class: 'panel' },
-      el('h2', {}, '風の6時間'),
+      el('h2', {}, ahead ? '風 直近6時間とこの先6時間' : '風の6時間'),
       el('p', { class: 'note' },
         '10分間の平均風速。'
+        + (ahead ? '破線は1時間ごとの予報で、統計補正はしていない。' : '')
         + 'アメダスの最大瞬間風速はその日の最大値なので、時系列にはならない。上の札に出してある。'),
+      fcLegend(fc),
       el('figure', { class: 'scroll-x' }, f.svg),
     ));
   }
@@ -365,6 +592,18 @@ function tipFor(r) {
       r.wind !== null ? { k: '風速', v: `${fmt(r.wind, 1)}m/s ${windDirName(r.windDirection)}` } : null,
       r.sun10m !== null ? { k: '日照（10分）', v: `${fmt(r.sun10m, 0)}分` } : null,
       r.pressure !== null ? { k: '気圧', v: `${fmt(r.pressure, 1)}hPa` } : null,
+    ].filter(Boolean),
+  };
+}
+
+function fcTipFor(r) {
+  return {
+    title: `${timeLabel(r.at)} の予報（統計補正なし）`,
+    rows: [
+      r.temp !== null ? { k: '気温', v: `${fmt(r.temp, 1)}℃` } : null,
+      r.prcp !== null ? { k: '降水（前1時間）', v: `${fmt(r.prcp, 1)}mm` } : null,
+      r.pop !== null ? { k: '降水確率', v: `${fmt(r.pop, 0)}%` } : null,
+      r.wind !== null ? { k: '風速', v: `${fmt(r.wind, 1)}m/s ${windDirName(r.windDirection)}` } : null,
     ].filter(Boolean),
   };
 }
@@ -397,4 +636,7 @@ function tablePanel(obs) {
   );
 }
 
-export { fileKeys, val, parseStamp, windDirName, timeLabel };
+export {
+  fileKeys, val, parseStamp, windDirName, timeLabel,
+  splitForecast, nextHours, degToDir16, radarUrl, timeline,
+};
