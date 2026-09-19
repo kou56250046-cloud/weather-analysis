@@ -6,7 +6,7 @@ import { consensusCode } from '../scripts/build-derived.js';
 // live.js は描画に document を使うが、取得と変換の関数は使わない
 const {
   fileKeys, val, parseStamp, windDirName, timeLabel,
-  splitForecast, nextHours, degToDir16, radarUrl, timeline,
+  splitForecast, nextHours, degToDir16, radarUrl, timeline, rainScaleMax, rainChartable,
 } = await import('../public/assets/live.js');
 
 test('val: 品質フラグが 0 以外の値は使わない', () => {
@@ -188,4 +188,23 @@ test('timeline: アメダスの行が抜けても時刻どおりに置き、抜�
   assert.deepEqual(tl.fcAt.map((r) => r.i), [26, 32]);
   assert.equal(tl.slots.length, 33);
   assert.equal(timeLabel(tl.slots[32].at), '14:00');
+});
+
+// ------------------------------------------------------------------ この先の降水
+
+test('rainScaleMax: 降っていなくても 1mm 分の軸を取る', () => {
+  const fc = (prcps) => prcps.map((prcp) => ({ prcp }));
+  assert.equal(rainScaleMax(fc([0, 0, 0])).max, 1.5);
+  assert.equal(rainScaleMax(fc([null, null])).max, 1.5);
+  assert.equal(rainScaleMax(fc([0.4, null, 0])).max, 1.5);
+  assert.equal(rainScaleMax(fc([2.3, 0.1])).max, 3);
+  assert.equal(rainScaleMax(fc([4, 1])).max, 6);
+});
+
+test('rainChartable: 数値のある枠が2つ以上のときだけ描く', () => {
+  assert.equal(rainChartable([{ prcp: 0, pop: 10 }, { prcp: 1, pop: null }]), true);
+  assert.equal(rainChartable([{ prcp: 0, pop: 10 }, { prcp: null, pop: null }]), false);
+  assert.equal(rainChartable([{ prcp: null, pop: null }, { prcp: null, pop: null }]), false);
+  // 降水量が欠けても確率があれば描く
+  assert.equal(rainChartable([{ prcp: null, pop: 30 }, { prcp: null, pop: 40 }]), true);
 });

@@ -9,7 +9,7 @@
 import { el, replace, fmt, fmtPct } from './dom.js';
 import { weatherIcon, describeCode, inferKind, KIND_LABEL } from './weather-icon.js';
 import {
-  frame, yAxis, line, bars, niceScale, legend, crosshair,
+  frame, yAxis, line, bars, dots, niceScale, legend, crosshair,
 } from './chart-svg.js';
 
 const AMEDAS = 'https://www.jma.go.jp/bosai/amedas/data';
@@ -373,7 +373,95 @@ function nextPanel(fc, loc) {
       + '統計補正はしていないので、予報タブの値とは少し食い違う。'
       + (fc.length < HOURS_AHEAD ? `${fc.length}時間分だけ取れた。` : '')),
     el('div', { class: 'tiles' }, tiles),
+    rainChartable(fc) ? rainChart(fc) : null,
     radarLink(loc),
+  );
+}
+
+// ------------------------------------------------------------------ この先の降水
+
+const isNum = (v) => v !== null && v !== undefined && Number.isFinite(v);
+
+/** 降水量の縦軸。降っていなくても軸が潰れないよう最小 1mm */
+function rainScaleMax(fc) {
+  const prcps = fc.map((r) => r.prcp).filter(isNum);
+  return niceScale(0, Math.max(...prcps, 1) * 1.15, 4);
+}
+
+/** 降水量か確率のどちらかが数値の枠が2つ以上あるときだけ描く */
+function rainChartable(fc) {
+  return fc.filter((r) => isNum(r.prcp) || isNum(r.pop)).length >= 2;
+}
+
+/**
+ * この先の降水。降水量は棒（左軸 mm）、降水確率は線（右軸 %）。
+ * 横軸を [-0.5, n-0.5] にして、f.x(i) を棒の枠の中央に合わせる。
+ * 棒・点・目盛り・カーソルが同じ x に来る。
+ * 二軸は読み違えやすいので、グリッドは mm からだけ引き、右軸は文字だけにして線と同じ色にする。
+ */
+function rainChart(fc) {
+  const n = fc.length;
+  const scale = rainScaleMax(fc);
+  const f = frame({
+    width: 720, height: 180,
+    pad: { top: 22, right: 44, bottom: 28, left: 42 },
+    xDomain: [-0.5, n - 0.5],
+    yDomain: [scale.min, scale.max],
+    label: 'この先6時間の降水量と降水確率',
+  });
+  yAxis(f, scale.ticks, { format: (v) => `${v}` });
+  f.plot.appendChild(el('text', {
+    x: -8, y: -9, 'text-anchor': 'end', fill: 'var(--series-1)', 'font-size': 10,
+  }, 'mm'));
+
+  // 右軸。確率 0〜100 を mm の軸の高さに写す
+  const popY = (p) => (p / 100) * scale.max;
+  for (const t of [0, 25, 50, 75, 100]) {
+    f.plot.appendChild(el('text', {
+      x: f.innerW + 8, y: f.y(popY(t)) + 3.5, 'text-anchor': 'start',
+      fill: 'var(--series-3)', 'font-size': 10.5,
+    }, `${t}`));
+  }
+  f.plot.appendChild(el('text', {
+    x: f.innerW + 8, y: -9, 'text-anchor': 'start', fill: 'var(--series-3)', 'font-size': 10,
+  }, '%'));
+
+  // 棒。0 は細い線、null は描かずに「—」を置く（降らないのではなく分からない）
+  // 棒は枠の半分強の幅。太すぎると点と線が埋もれる
+  bars(f, fc.map((r, i) => ({ x: i, value: r.prcp })), { color: 'var(--series-1)', gap: (f.innerW / n) * 0.45 });
+  fc.forEach((r, i) => {
+    if (isNum(r.prcp)) return;
+    f.plot.appendChild(el('text', {
+      x: f.x(i), y: f.innerH - 4, 'text-anchor': 'middle',
+      fill: 'var(--text-muted)', 'font-size': 11,
+    }, '—'));
+  });
+
+  const pts = fc.map((r, i) => ({ x: i, y: isNum(r.pop) ? popY(r.pop) : null }));
+  line(f, pts, { stroke: 'var(--series-3)', width: 2 });
+  dots(f, pts, { color: 'var(--series-3)', r: 3.5 });
+
+  // 目盛りは札の時刻
+  const g = el('g');
+  fc.forEach((r, i) => {
+    g.appendChild(el('text', {
+      x: f.x(i), y: f.innerH + 16, 'text-anchor': 'middle',
+      fill: 'var(--text-muted)', 'font-size': 10.5,
+    }, timeLabel(r.at)));
+  });
+  f.plot.appendChild(g);
+  crosshair(f, fc, (i) => fcTipFor(fc[i]));
+
+  return el(
+    'div', {},
+    el('h3', {}, '降水 1時間ごと（予報）'),
+    el('p', { class: 'note' },
+      '棒はその時刻までの1時間の降水量。最初の棒の時間帯は、一部が下の実測と重なる。統計補正はしていない。'),
+    legend([
+      { label: '降水量（前1時間, mm）', color: 'var(--series-1)' },
+      { label: '降水確率（%）', color: 'var(--series-3)' },
+    ]),
+    el('figure', { class: 'scroll-x' }, f.svg),
   );
 }
 
@@ -639,4 +727,5 @@ function tablePanel(obs) {
 export {
   fileKeys, val, parseStamp, windDirName, timeLabel,
   splitForecast, nextHours, degToDir16, radarUrl, timeline,
+  rainScaleMax, rainChartable, rainChart,
 };
