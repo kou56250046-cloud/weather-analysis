@@ -99,13 +99,30 @@ export async function upsertNdjson(path, records, { replaceExisting = false } = 
   return { added, updated, skipped, total: merged.length };
 }
 
+/**
+ * 一時ファイルを本物に差し替える。
+ * Windows ではウイルス対策や検索インデックスが一瞬ファイルを掴み、rename が EPERM / EBUSY で落ちることがある。
+ * 長い取得の途中でこれが1回起きるだけで全体が止まるので、少し待って数回やり直す。
+ */
+async function renameWithRetry(from, to, tries = 5) {
+  for (let i = 1; ; i++) {
+    try {
+      await rename(from, to);
+      return;
+    } catch (err) {
+      if (i >= tries || (err.code !== 'EPERM' && err.code !== 'EBUSY')) throw err;
+      await new Promise((resolve) => { setTimeout(resolve, 200 * i); });
+    }
+  }
+}
+
 /** NDJSON を丸ごと書き直す。一時ファイル経由 */
 export async function writeNdjson(path, records) {
   await mkdir(dirname(path), { recursive: true });
   const body = records.map((r) => JSON.stringify(r)).join('\n') + (records.length ? '\n' : '');
   const tmp = `${path}.tmp`;
   await writeFile(tmp, body, 'utf8');
-  await rename(tmp, path);
+  await renameWithRetry(tmp, path);
   // 生を書いたら、同名の .gz は古いので消す
   const gz = `${path}.gz`;
   if (existsSync(gz)) await unlink(gz);
@@ -116,7 +133,7 @@ export async function writeJson(path, data, { pretty = false } = {}) {
   await mkdir(dirname(path), { recursive: true });
   const tmp = `${path}.tmp`;
   await writeFile(tmp, JSON.stringify(data, null, pretty ? 2 : 0), 'utf8');
-  await rename(tmp, path);
+  await renameWithRetry(tmp, path);
 }
 
 /** JSON を読む。無ければ fallback */
@@ -136,7 +153,7 @@ export async function compressOld(dir, keepFromYear) {
     const path = join(dir, name);
     const raw = await readFile(path);
     await writeFile(`${path}.gz.tmp`, gzipSync(raw, { level: 9 }));
-    await rename(`${path}.gz.tmp`, `${path}.gz`);
+    await renameWithRetry(`${path}.gz.tmp`, `${path}.gz`);
     await unlink(path);
     done.push(name);
   }
