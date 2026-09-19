@@ -61,6 +61,23 @@ Open-Meteo は初期時刻を返さないので、「いつ見た予報か」を
 アンサンブルは `ecmwf_ifs025` と `gfs_seamless` の2つだけ取得し、`model` が一致する行に付ける。
 `pop` はアンサンブルの降水メンバー比率。アンサンブルの無いモデルでは `null`。
 
+### 湿度・風の補完 `data/fcst-supp/<loc>/<YYYY-MM>.ndjson`
+
+遡り取得（previous-runs）の予報行は気温と降水だけで取ったので `rh` と `wind` が null。
+追記専用の規約を守るため既存行は書き換えず、湿度と風だけの行をここに追記する（`backfill-previous-runs.js --supplement`）。
+
+```
+{ v:1, id:'<既存行の id>|rhwind', loc, model, fetched, target, lead, rh, wind, src:'previous-runs-supp' }
+```
+
+- `fetched` は既存の previous-runs 行と同じ組み立て（`target − lead` の `T00:00Z`）
+- `build-derived.js` の `mergeSupplement` が `(model, fetched, target)` で対応づけ、null の `rh` / `wind` だけを埋める。
+  気温と降水には触らない
+- `wind` は時間別の最大。毎日の収集（`wind_speed_10m_max`）と同じ定義。実測は日平均なので、定義の差は MOS が吸収する
+- 取り終えた区間は `_done.json`（`{ model, start, end }` の配列）に記録し、再実行では飛ばす。
+  429 / 5xx / 構造エラーの区間は記録しない。それ以外の 4xx（アーカイブが無い期間）はデータ無しとして記録する
+- 仕様: `.claude/specs/backfill-rh-wind/`
+
 ### 気象庁予報 `data/jma-fcst/<loc>/<YYYY-MM>.ndjson`
 
 同じ形。`model` は `"jma_official"`、`run` は発表時刻、`q` は持たない。

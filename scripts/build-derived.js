@@ -7,7 +7,7 @@
 // 使い方: node scripts/build-derived.js [--loc setagaya]
 import { readNdjsonDir, readJson, writeJson } from './lib/store.js';
 import {
-  LOCATIONS_PATH, fcstDir, jmaFcstDir, obsDir, archiveDir, outPath, hourlyPath,
+  LOCATIONS_PATH, fcstDir, fcstSuppDir, jmaFcstDir, obsDir, archiveDir, outPath, hourlyPath,
 } from './lib/paths.js';
 import { normalsPath } from './collect-normals.js';
 import { MODELS } from './lib/openmeteo.js';
@@ -191,17 +191,56 @@ export function consensusCode(codes) {
   return sorted[Math.floor((sorted.length - 1) / 2)];
 }
 
+// ------------------------------------------------------------------ 湿度と風の補完
+
+/**
+ * 予報行の rh / wind が null で、同じ (model, fetched, target) の補完行があれば、その値で埋める。
+ * 補完行は、気温と降水だけで遡って取った過去予報に、後から湿度と風を足したもの（data/fcst-supp）。
+ * 既存の予報行は追記専用なので書き換えず、読むときに合流する。
+ *
+ * - 埋めるのは null の項目だけ。数値が入っている行（毎日の収集）には触らない
+ * - 気温・降水には一切触らない。気温と降水の成績は補完の有無で変わらない
+ * - 対応する予報行が無い補完行は捨てる（気温が足りず予報行が作られなかった日など）
+ * 元の行は変えず、埋めた行だけ新しいオブジェクトにする。
+ */
+export function mergeSupplement(fcstRows, suppRows, stats = {}) {
+  stats.supp = suppRows?.length ?? 0;
+  stats.filled = 0;
+  if (!suppRows?.length) return fcstRows;
+  const supp = new Map();
+  for (const s of suppRows) supp.set(`${s.model}|${s.fetched}|${s.target}`, s);
+
+  return fcstRows.map((r) => {
+    if (r.rh !== null && r.rh !== undefined && r.wind !== null && r.wind !== undefined) return r;
+    const s = supp.get(`${r.model}|${r.fetched}|${r.target}`);
+    if (!s) return r;
+    const rh = r.rh ?? s.rh ?? null;
+    const wind = r.wind ?? s.wind ?? null;
+    if (rh === (r.rh ?? null) && wind === (r.wind ?? null)) return r;
+    stats.filled++;
+    return { ...r, rh, wind };
+  });
+}
+
 // ------------------------------------------------------------------ 地点ごとの処理
 
 async function buildLocation(loc, meta) {
-  const [fcstRows, jmaRows, obsRows, archiveRows, normals] = await Promise.all([
+  const [rawFcstRows, suppRows, jmaRows, obsRows, archiveRows, normals] = await Promise.all([
     readNdjsonDir(fcstDir(loc.key)),
+    readNdjsonDir(fcstSuppDir(loc.key)),
     readNdjsonDir(jmaFcstDir(loc.key)),
     readNdjsonDir(obsDir(loc.key)),
     readNdjsonDir(archiveDir(loc.key)),
     readJson(normalsPath(loc.key)),
   ]);
   const hourly = await readJson(hourlyPath(loc.key));
+  const supp = {};
+  const fcstRows = mergeSupplement(rawFcstRows, suppRows, supp);
+  // 予報行の fetched の作り方が変わると、補完が1行も対応せず黙って効かなくなる。気づけるように出す
+  if (supp.supp > 0 && supp.filled < supp.supp * 0.5) {
+    console.warn(`${loc.key}: 湿度・風の補完 ${supp.supp} 行のうち ${supp.filled} 行しか予報に対応しなかった。`
+      + '予報行の fetched の組み立てが変わっていないか確かめること');
+  }
 
   // NDJSON は追記順に並ぶ。バックフィルを後から走らせると、
   // 8月・9月の次に1月〜7月が続くような並びになる。
@@ -379,7 +418,7 @@ async function buildLocation(loc, meta) {
   const offset = era5Offset(archiveRows, obsRows, 'tmax');
 
   return {
-    fcstRows, jmaRows, obsRows, archiveRows, normals, hourly,
+    fcstRows, jmaRows, obsRows, archiveRows, normals, hourly, supp,
     scores, leak, forecast, coverageByLead, vsNormal,
     obsYearly, era5Yearly, offset,
     mosByVarLead, leadMae,
@@ -485,7 +524,7 @@ async function main() {
         console.log(
           `${loc.key.padEnd(12)} 実測 ${String(r.obsRows.length).padStart(5)} 日 / `
           + `予報 ${String(r.fcstRows.length).padStart(6)} 行 / ERA5 ${String(r.archiveRows.length).padStart(6)} 日 / `
-          + `MOS ${mosMae.length} lead / ${Date.now() - t0}ms`,
+          + `補完 ${r.supp.filled}/${r.supp.supp} 行 / MOS ${mosMae.length} lead / ${Date.now() - t0}ms`,
         );
       } catch (err) {
         errors.push(`${loc.key}: ${err.message}`);

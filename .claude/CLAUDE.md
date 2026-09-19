@@ -71,6 +71,7 @@ node scripts/collect-jma-forecast.js         # 気象庁の府県天気予報を
 node scripts/collect-normals.js              # 1991-2020 の日別平年値を収集（初回だけ）
 node scripts/build-derived.js                # 検証・MOS学習・合議を再計算し public/data を出力
 node scripts/backfill-previous-runs.js       # 過去の予報を遡って取得
+node scripts/backfill-previous-runs.js --supplement --to 2025-04-30  # 遡った予報に湿度と風を補う（取得済みの区間は飛ばす）
 node scripts/backfill-archive.js             # ERA5 長期データを取得（429 が出たら日を改めて再実行）
 node scripts/compress-old.js                 # 前年以前の NDJSON を gzip 化
 node scripts/make-icons.js                   # PWA のアイコンを生成（図柄を変えたときだけ）
@@ -153,3 +154,18 @@ node --test test/*.test.js                   # 単体テスト
 - NDJSON は追記専用。既存行を書き換えない
 - 行の `id` は決定的に作る。再取得しても行が増えないこと（冪等性）を必ず確認する
 - スキーマを変えるときは `v` を上げ、読み込み側で旧版も読めるようにする
+
+### 湿度・風の補完（`data/fcst-supp`）
+
+遡って取った過去予報は気温と降水だけなので、湿度と風は `--supplement` で別ディレクトリに補い、
+`build-derived.js` が読むときに合流する。既存の `data/fcst` は書き換えない。
+地点やモデルを足したとき、期間を延ばしたときに再実行する。
+
+- 1回の上限は約 4,500 call（1時間の枠 5,000 に合わせてある）。超えるなら `--from` / `--to` で分け、**1時間空ける**
+- 取り終えた区間は `_done.json` に記録され、再実行では飛ばす。失敗した区間（429 / 4xx / 5xx / 応答の形の変化）は記録しないので、
+  時間を空けて同じコマンドを流せば取り直す
+- `_done.json` が壊れたら消して流し直せばよい。行の `id` は決定的なので行は増えない
+- 取ったあとは `compress-old.js` → `build-derived.js` の順。build のログの「補完 x/y 行」で x が y を大きく下回ったら、
+  予報行の `fetched` の組み立てが変わって対応が取れていない
+- 気温と降水の成績が変わっていないことは、`data/fcst-supp` を一時退避した build と戻した build の `scores-*.json` で比べる
+- 詳細: `.claude/specs/backfill-rh-wind/`

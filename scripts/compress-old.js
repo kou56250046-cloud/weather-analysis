@@ -1,7 +1,9 @@
 // 前年以前の NDJSON を gzip 化する。読み込み側は .gz も透過的に扱う。
 // 予報データは年 30MB 前後になるので、放っておくとリポジトリが膨らむ。
 import { compressOld, readJson } from './lib/store.js';
-import { LOCATIONS_PATH, fcstDir, jmaFcstDir, obsDir } from './lib/paths.js';
+import {
+  LOCATIONS_PATH, fcstDir, fcstSuppDir, jmaFcstDir, obsDir,
+} from './lib/paths.js';
 import { toJstDate } from './lib/time.js';
 import { runIfMain } from './lib/main.js';
 
@@ -14,7 +16,7 @@ async function main() {
   let total = 0;
 
   for (const loc of cfg.locations) {
-    for (const dir of [fcstDir(loc.key), jmaFcstDir(loc.key), obsDir(loc.key)]) {
+    for (const dir of [fcstDir(loc.key), fcstSuppDir(loc.key), jmaFcstDir(loc.key), obsDir(loc.key)]) {
       const done = await compressOld(dir, keepFrom);
       if (done.length) {
         console.log(`${dir}: ${done.length} ファイルを圧縮`);

@@ -256,6 +256,29 @@ export function quantiles(values, ps = [0.1, 0.25, 0.5, 0.75, 0.9]) {
 }
 
 /**
+ * previous-runs に頼む時間別変数の名前。
+ * 変数を増やすほど API の課金単位が増える。既定は気温と降水だけ。
+ *   core  気温・降水
+ *   supp  気温・湿度・風。湿度と風を後から補うためのもの。
+ *         気温は保存しないが、日別に畳むときの「24点中18点以上」の判定に要るので取る
+ *   all   5種すべて
+ */
+export function previousRunsNames(vars = 'core', leads = [1, 2, 3, 4, 5, 6, 7]) {
+  const bases = {
+    core: [HOURLY_VARS.temp, HOURLY_VARS.prcp],
+    supp: [HOURLY_VARS.temp, HOURLY_VARS.rh, HOURLY_VARS.wind],
+    all: Object.values(HOURLY_VARS),
+  }[vars];
+  if (!bases) throw new Error(`previous-runs: 不明な vars (${vars})`);
+
+  const names = [];
+  for (const base of bases) {
+    for (const lead of leads) names.push(`${base}_previous_day${lead}`);
+  }
+  return names;
+}
+
+/**
  * 過去に出された予報。リードタイム別に遡って取る。
  * 日別変数に対応していないため時間別で取り、JST の暦日に畳む。
  *
@@ -267,15 +290,7 @@ export function quantiles(values, ps = [0.1, 0.25, 0.5, 0.75, 0.9]) {
 export async function fetchPreviousRunsDaily(loc, model, {
   startDate, endDate, leads = [1, 2, 3, 4, 5, 6, 7], vars = 'core',
 }) {
-  // 変数を増やすほど API の課金単位が増える。既定は気温と降水だけ
-  const bases = vars === 'all'
-    ? Object.values(HOURLY_VARS)
-    : [HOURLY_VARS.temp, HOURLY_VARS.prcp];
-
-  const names = [];
-  for (const base of bases) {
-    for (const lead of leads) names.push(`${base}_previous_day${lead}`);
-  }
+  const names = previousRunsNames(vars, leads);
   const url = buildUrl(API.previous, {
     ...COMMON,
     latitude: loc.lat,
@@ -287,6 +302,11 @@ export async function fetchPreviousRunsDaily(loc, model, {
   });
   const { data } = await getJson(url, { timeoutMs: 60_000 });
   if (!data?.hourly?.time) throw new Error(`open-meteo: previous-runs の構造が変わっている (${model})`);
+  // 頼んだ変数が応答に無いのは、名前が変わったか対応をやめたとき。黙って null にしない
+  const missing = names.filter((n) => !(n in data.hourly));
+  if (missing.length) {
+    throw new Error(`open-meteo: previous-runs の応答に ${missing[0]} ほか ${missing.length} 変数が無い (${model})`);
+  }
 
   const out = new Map();
   for (const lead of leads) {
@@ -332,8 +352,9 @@ export function foldHourlyToDaily(times, series) {
       tmax: round(Math.max(...temp), 2),
       tmin: round(Math.min(...temp), 2),
       prcp: prcp.length ? round(sum(prcp), 2) : null,
-      rh: rh.length ? round(mean(rh), 1) : null,
-      wind: wind.length ? round(Math.max(...wind), 2) : null,
+      // 湿度と風も気温と同じく 18 点以上ないと日別値にしない。数時間分の平均や最大は偏る
+      rh: rh.length >= 18 ? round(mean(rh), 1) : null,
+      wind: wind.length >= 18 ? round(Math.max(...wind), 2) : null,
       sun: sun.length ? round(sum(sun) / 3600, 2) : null,
       code: null, // 時間別からは天気概況を作らない
     });
