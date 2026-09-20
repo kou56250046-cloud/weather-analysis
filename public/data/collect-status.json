@@ -1,11 +1,11 @@
 {
   "v": 1,
-  "ranAt": "2026-09-21T03:25:15+09:00",
+  "ranAt": "2026-09-21T07:47:30+09:00",
   "event": "schedule",
-  "schedule": "0 16 * * *",
-  "runId": "35528953626",
+  "schedule": "0 21 * * *",
+  "runId": "35542716907",
   "runAttempt": "1",
-  "changedCount": 47,
+  "changedCount": 17,
   "changed": [
     "M data/collect-log.ndjson",
     " M data/fcst/atami/2026-09.ndjson",
@@ -23,72 +23,22 @@
     " M data/jma-fcst/atami/2026-09.ndjson",
     " M data/jma-fcst/kawasaki/2026-09.ndjson",
     " M data/jma-fcst/sagamihara/2026-09.ndjson",
-    " M data/jma-fcst/setagaya/2026-09.ndjson",
-    " M data/obs/atami/2026.ndjson",
-    " M data/obs/kawasaki/2026.ndjson",
-    " M data/obs/sagamihara/2026.ndjson",
-    " M data/obs/setagaya/2026.ndjson",
-    " M public/data/coef-atami.json",
-    " M public/data/coef-kawasaki.json",
-    " M public/data/coef-sagamihara.json",
-    " M public/data/coef-setagaya.json",
-    " M public/data/forecast-atami.json",
-    " M public/data/forecast-kawasaki.json",
-    " M public/data/forecast-sagamihara.json",
-    " M public/data/forecast-setagaya.json",
-    " M public/data/history-atami.json",
-    " M public/data/history-kawasaki.json",
-    " M public/data/history-sagamihara.json",
-    " M public/data/history-setagaya.json",
-    " M public/data/hourly-atami.json",
-    " M public/data/hourly-kawasaki.json",
-    " M public/data/hourly-sagamihara.json",
-    " M public/data/hourly-setagaya.json",
-    " M public/data/leakcheck.json",
-    " M public/data/meta.json",
-    " M public/data/normals-atami.json",
-    " M public/data/normals-kawasaki.json",
-    " M public/data/normals-sagamihara.json",
-    " M public/data/normals-setagaya.json",
-    " M public/data/scores-atami.json",
-    " M public/data/scores-kawasaki.json",
-    " M public/data/scores-sagamihara.json",
-    " M public/data/scores-setagaya.json"
+    " M data/jma-fcst/setagaya/2026-09.ndjson"
   ],
-  "headSha": "f796210",
+  "headSha": "491726e",
   "mtimes": {
-    "public/data/meta.json": "2026-09-20T18:25:15.014Z",
-    "public/data/forecast-setagaya.json": "2026-09-20T18:24:50.109Z",
-    "public/data/hourly-setagaya.json": "2026-09-20T18:24:50.113Z",
-    "data/collect-log.ndjson": "2026-09-20T18:25:15.017Z"
+    "public/data/meta.json": "2026-09-20T22:47:22.974Z",
+    "public/data/forecast-setagaya.json": "2026-09-20T22:47:22.966Z",
+    "public/data/hourly-setagaya.json": "2026-09-20T22:47:22.974Z",
+    "data/collect-log.ndjson": "2026-09-20T22:47:29.550Z"
   },
   "lastCollect": {
-    "forecast": "2026-09-21T03:24:37+09:00",
+    "forecast": "2026-09-21T07:47:28+09:00",
     "observation": "2026-09-21T03:24:41+09:00",
-    "jma-forecast": "2026-09-21T03:24:38+09:00",
+    "jma-forecast": "2026-09-21T07:47:29+09:00",
     "derive": "2026-09-21T03:25:15+09:00"
   },
   "recentLog": [
-    {
-      "v": 1,
-      "id": "observation|2026-09-20T03:19:40+09:00",
-      "ts": "2026-09-20T03:19:40+09:00",
-      "job": "observation",
-      "ok": true,
-      "added": 4,
-      "errors": [],
-      "durationMs": 2446
-    },
-    {
-      "v": 1,
-      "id": "derive|2026-09-20T03:20:20+09:00",
-      "ts": "2026-09-20T03:20:20+09:00",
-      "job": "derive",
-      "ok": true,
-      "added": 4,
-      "errors": [],
-      "durationMs": 39897
-    },
     {
       "v": 1,
       "id": "forecast|2026-09-20T07:34:22+09:00",
@@ -148,6 +98,26 @@
       "added": 4,
       "errors": [],
       "durationMs": 33487
+    },
+    {
+      "v": 1,
+      "id": "forecast|2026-09-21T07:47:28+09:00",
+      "ts": "2026-09-21T07:47:28+09:00",
+      "job": "forecast",
+      "ok": true,
+      "added": 268,
+      "errors": [],
+      "durationMs": 4283
+    },
+    {
+      "v": 1,
+      "id": "jma-forecast|2026-09-21T07:47:29+09:00",
+      "ts": "2026-09-21T07:47:29+09:00",
+      "job": "jma-forecast",
+      "ok": true,
+      "added": 8,
+      "errors": [],
+      "durationMs": 1467
     }
   ]
 }
