@@ -75,7 +75,7 @@ node scripts/backfill-previous-runs.js --supplement --to 2025-04-30  # 遡った
 node scripts/backfill-archive.js             # ERA5 長期データを取得（429 が出たら日を改めて再実行）
 node scripts/compress-old.js                 # 前年以前の NDJSON を gzip 化
 node scripts/make-icons.js                   # PWA のアイコンを生成（図柄を変えたときだけ）
-node scripts/serve.js                        # public/ をローカル配信（既定 8787 番）
+node scripts/serve.js                        # public/ をローカル配信（既定 8790 番。8787 は AI Radar）
 node --test test/*.test.js                   # 単体テスト
 ```
 
