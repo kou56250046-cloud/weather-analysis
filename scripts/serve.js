@@ -7,7 +7,7 @@ import { join, normalize, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(fileURLToPath(new URL('../public', import.meta.url)));
-const PORT = Number(process.env.PORT ?? 8787);
+const PORT = Number(process.env.PORT ?? 8790);
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',

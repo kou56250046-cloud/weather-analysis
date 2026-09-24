@@ -39,7 +39,7 @@
 ## 使い方
 
 ```bash
-node scripts/serve.js        # http://localhost:8787 で画面を開く
+node scripts/serve.js        # http://localhost:8790 で画面を開く（8787 は AI Radar が使う）
 npm test                     # 単体テスト
 npm run icons                # PWA のアイコンを描き直す
 ```
