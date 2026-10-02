@@ -1,11 +1,11 @@
 {
   "v": 1,
-  "ranAt": "2026-10-02T05:44:07+09:00",
+  "ranAt": "2026-10-02T09:19:53+09:00",
   "event": "schedule",
-  "schedule": "0 16 * * *",
-  "runId": "36923618625",
+  "schedule": "0 21 * * *",
+  "runId": "36945422608",
   "runAttempt": "1",
-  "changedCount": 43,
+  "changedCount": 9,
   "changed": [
     "M data/collect-log.ndjson",
     " M data/fcst/atami/2026-10.ndjson",
@@ -15,76 +15,22 @@
     " M data/hourly/atami.json",
     " M data/hourly/kawasaki.json",
     " M data/hourly/sagamihara.json",
-    " M data/hourly/setagaya.json",
-    " M data/jma-fcst/atami/2026-10.ndjson",
-    " M data/jma-fcst/kawasaki/2026-10.ndjson",
-    " M data/jma-fcst/sagamihara/2026-10.ndjson",
-    " M data/jma-fcst/setagaya/2026-10.ndjson",
-    " M data/obs/atami/2026.ndjson",
-    " M data/obs/kawasaki/2026.ndjson",
-    " M data/obs/sagamihara/2026.ndjson",
-    " M data/obs/setagaya/2026.ndjson",
-    " M public/data/coef-atami.json",
-    " M public/data/coef-kawasaki.json",
-    " M public/data/coef-sagamihara.json",
-    " M public/data/coef-setagaya.json",
-    " M public/data/forecast-atami.json",
-    " M public/data/forecast-kawasaki.json",
-    " M public/data/forecast-sagamihara.json",
-    " M public/data/forecast-setagaya.json",
-    " M public/data/history-atami.json",
-    " M public/data/history-kawasaki.json",
-    " M public/data/history-sagamihara.json",
-    " M public/data/history-setagaya.json",
-    " M public/data/hourly-atami.json",
-    " M public/data/hourly-kawasaki.json",
-    " M public/data/hourly-sagamihara.json",
-    " M public/data/hourly-setagaya.json",
-    " M public/data/leakcheck.json",
-    " M public/data/meta.json",
-    " M public/data/normals-atami.json",
-    " M public/data/normals-kawasaki.json",
-    " M public/data/normals-sagamihara.json",
-    " M public/data/normals-setagaya.json",
-    " M public/data/scores-atami.json",
-    " M public/data/scores-kawasaki.json",
-    " M public/data/scores-sagamihara.json",
-    " M public/data/scores-setagaya.json"
+    " M data/hourly/setagaya.json"
   ],
-  "headSha": "cbbff0f",
+  "headSha": "1c23058",
   "mtimes": {
-    "public/data/meta.json": "2026-10-01T20:44:06.564Z",
-    "public/data/forecast-setagaya.json": "2026-10-01T20:43:36.469Z",
-    "public/data/hourly-setagaya.json": "2026-10-01T20:43:36.472Z",
-    "data/collect-log.ndjson": "2026-10-01T20:44:06.566Z"
+    "public/data/meta.json": "2026-10-02T00:19:46.722Z",
+    "public/data/forecast-setagaya.json": "2026-10-02T00:19:46.714Z",
+    "public/data/hourly-setagaya.json": "2026-10-02T00:19:46.722Z",
+    "data/collect-log.ndjson": "2026-10-02T00:19:52.637Z"
   },
   "lastCollect": {
-    "forecast": "2026-10-02T05:43:22+09:00",
+    "forecast": "2026-10-02T09:19:51+09:00",
     "observation": "2026-10-02T05:43:25+09:00",
-    "jma-forecast": "2026-10-02T05:43:23+09:00",
+    "jma-forecast": "2026-10-02T09:19:52+09:00",
     "derive": "2026-10-02T05:44:06+09:00"
   },
   "recentLog": [
-    {
-      "v": 1,
-      "id": "observation|2026-10-01T05:26:11+09:00",
-      "ts": "2026-10-01T05:26:11+09:00",
-      "job": "observation",
-      "ok": true,
-      "added": 4,
-      "errors": [],
-      "durationMs": 3176
-    },
-    {
-      "v": 1,
-      "id": "derive|2026-10-01T05:26:31+09:00",
-      "ts": "2026-10-01T05:26:31+09:00",
-      "job": "derive",
-      "ok": true,
-      "added": 4,
-      "errors": [],
-      "durationMs": 19946
-    },
     {
       "v": 1,
       "id": "forecast|2026-10-01T09:15:32+09:00",
@@ -144,6 +90,26 @@
       "added": 4,
       "errors": [],
       "durationMs": 40596
+    },
+    {
+      "v": 1,
+      "id": "forecast|2026-10-02T09:19:51+09:00",
+      "ts": "2026-10-02T09:19:51+09:00",
+      "job": "forecast",
+      "ok": true,
+      "added": 272,
+      "errors": [],
+      "durationMs": 4102
+    },
+    {
+      "v": 1,
+      "id": "jma-forecast|2026-10-02T09:19:52+09:00",
+      "ts": "2026-10-02T09:19:52+09:00",
+      "job": "jma-forecast",
+      "ok": true,
+      "added": 0,
+      "errors": [],
+      "durationMs": 1022
     }
   ]
 }
