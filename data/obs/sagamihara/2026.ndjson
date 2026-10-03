@@ -273,3 +273,4 @@
 {"v":1,"id":"sagamihara|2026-09-30","loc":"sagamihara","date":"2026-09-30","src":"etrn","station":"0366","tavg":18.6,"tmax":21.4,"tmin":16.8,"prcp":10.5,"prcpMax1h":5.5,"rh":93,"rhMin":79,"wind":2.1,"windMax":4.4,"gust":6.1,"sun":0.3,"snow":null}
 {"v":1,"id":"sagamihara|2026-10-01","loc":"sagamihara","date":"2026-10-01","src":"etrn","station":"0366","tavg":23.1,"tmax":30.6,"tmin":18.3,"prcp":0.5,"prcpMax1h":0.5,"rh":81,"rhMin":47,"wind":2.1,"windMax":5.9,"gust":8.6,"sun":9.4,"snow":null}
 {"v":1,"id":"sagamihara|2026-10-02","loc":"sagamihara","date":"2026-10-02","src":"etrn","station":"0366","tavg":20.4,"tmax":22.9,"tmin":18.5,"prcp":0,"prcpMax1h":0,"rh":79,"rhMin":65,"wind":2.7,"windMax":5.9,"gust":9.9,"sun":0.2,"snow":null}
+{"v":1,"id":"sagamihara|2026-10-03","loc":"sagamihara","date":"2026-10-03","src":"etrn","station":"0366","tavg":19.4,"tmax":23.1,"tmin":16.2,"prcp":0,"prcpMax1h":0,"rh":68,"rhMin":47,"wind":2.1,"windMax":5.6,"gust":8,"sun":2.9,"snow":null}
