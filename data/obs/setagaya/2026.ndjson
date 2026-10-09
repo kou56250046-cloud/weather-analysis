@@ -279,3 +279,4 @@
 {"v":1,"id":"setagaya|2026-10-06","loc":"setagaya","date":"2026-10-06","src":"etrn","station":"47662","tavg":22.7,"tmax":27.4,"tmin":19.2,"prcp":0,"prcpMax1h":0,"rh":73,"rhMin":56,"wind":2.7,"windMax":4.9,"gust":9.5,"sun":6.1,"snow":0}
 {"v":1,"id":"setagaya|2026-10-07","loc":"setagaya","date":"2026-10-07","src":"etrn","station":"47662","tavg":21.1,"tmax":26.6,"tmin":17,"prcp":0,"prcpMax1h":0,"rh":51,"rhMin":30,"wind":3.3,"windMax":5.8,"gust":10.8,"sun":2.9,"snow":0}
 {"v":1,"id":"setagaya|2026-10-08","loc":"setagaya","date":"2026-10-08","src":"etrn","station":"47662","tavg":19.8,"tmax":25,"tmin":15.4,"prcp":0,"prcpMax1h":0,"rh":62,"rhMin":45,"wind":2.3,"windMax":5.7,"gust":8.5,"sun":10.6,"snow":0}
+{"v":1,"id":"setagaya|2026-10-09","loc":"setagaya","date":"2026-10-09","src":"etrn","station":"47662","tavg":20.6,"tmax":26.1,"tmin":16.5,"prcp":0,"prcpMax1h":0,"rh":66,"rhMin":45,"wind":2,"windMax":4.7,"gust":7.7,"sun":10.4,"snow":0}
