@@ -187,3 +187,5 @@
 {"v":1,"id":"jma-forecast|2026-10-11T04:39:26+09:00","ts":"2026-10-11T04:39:26+09:00","job":"jma-forecast","ok":true,"added":32,"errors":[],"durationMs":1031}
 {"v":1,"id":"observation|2026-10-11T04:39:29+09:00","ts":"2026-10-11T04:39:29+09:00","job":"observation","ok":true,"added":4,"errors":[],"durationMs":2623}
 {"v":1,"id":"derive|2026-10-11T04:40:02+09:00","ts":"2026-10-11T04:40:02+09:00","job":"derive","ok":true,"added":4,"errors":[],"durationMs":32961}
+{"v":1,"id":"forecast|2026-10-11T08:58:10+09:00","ts":"2026-10-11T08:58:10+09:00","job":"forecast","ok":true,"added":272,"errors":[],"durationMs":4340}
+{"v":1,"id":"jma-forecast|2026-10-11T08:58:11+09:00","ts":"2026-10-11T08:58:11+09:00","job":"jma-forecast","ok":true,"added":0,"errors":[],"durationMs":1446}
