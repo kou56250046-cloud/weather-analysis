@@ -249,3 +249,7 @@
 {"v":1,"id":"derive|2026-10-21T04:47:11+09:00","ts":"2026-10-21T04:47:11+09:00","job":"derive","ok":true,"added":4,"errors":[],"durationMs":42434}
 {"v":1,"id":"forecast|2026-10-21T08:32:08+09:00","ts":"2026-10-21T08:32:08+09:00","job":"forecast","ok":true,"added":272,"errors":[],"durationMs":3397}
 {"v":1,"id":"jma-forecast|2026-10-21T08:32:09+09:00","ts":"2026-10-21T08:32:09+09:00","job":"jma-forecast","ok":true,"added":0,"errors":[],"durationMs":1015}
+{"v":1,"id":"forecast|2026-10-22T04:50:30+09:00","ts":"2026-10-22T04:50:30+09:00","job":"forecast","ok":true,"added":260,"errors":[],"durationMs":7807}
+{"v":1,"id":"jma-forecast|2026-10-22T04:50:31+09:00","ts":"2026-10-22T04:50:31+09:00","job":"jma-forecast","ok":true,"added":32,"errors":[],"durationMs":1044}
+{"v":1,"id":"observation|2026-10-22T04:50:34+09:00","ts":"2026-10-22T04:50:34+09:00","job":"observation","ok":false,"added":0,"errors":["setagaya/2026-9: HTTP 404","setagaya/2026-10: HTTP 404","kawasaki/2026-9: HTTP 404","kawasaki/2026-10: HTTP 404","sagamihara/2026-9: HTTP 404","sagamihara/2026-10: HTTP 404","atami/2026-9: HTTP 404","atami/2026-10: HTTP 404"],"durationMs":2542}
+{"v":1,"id":"derive|2026-10-22T04:51:09+09:00","ts":"2026-10-22T04:51:09+09:00","job":"derive","ok":true,"added":4,"errors":[],"durationMs":34585}
