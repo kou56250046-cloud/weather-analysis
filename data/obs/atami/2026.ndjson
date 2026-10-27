@@ -297,3 +297,4 @@
 {"v":1,"id":"atami|2026-10-24","loc":"atami","date":"2026-10-24","src":"etrn","station":"47668","tavg":18.4,"tmax":19.1,"tmin":17,"prcp":13.5,"prcpMax1h":10.5,"rh":94,"rhMin":74,"wind":2.1,"windMax":5.1,"gust":6.9,"sun":0,"snow":null}
 {"v":1,"id":"atami|2026-10-25","loc":"atami","date":"2026-10-25","src":"etrn","station":"47668","tavg":22.1,"tmax":27,"tmin":18.4,"prcp":23,"prcpMax1h":10,"rh":89,"rhMin":73,"wind":2.9,"windMax":8.9,"gust":15.5,"sun":1.7,"snow":null}
 {"v":1,"id":"atami|2026-10-26","loc":"atami","date":"2026-10-26","src":"etrn","station":"47668","tavg":18.8,"tmax":20.6,"tmin":17.3,"prcp":79.5,"prcpMax1h":10,"rh":96,"rhMin":91,"wind":2.5,"windMax":8.3,"gust":12.7,"sun":0,"snow":null}
+{"v":1,"id":"atami|2026-10-27","loc":"atami","date":"2026-10-27","src":"etrn","station":"47668","tavg":18.3,"tmax":20,"tmin":17.4,"prcp":4,"prcpMax1h":1.5,"rh":94,"rhMin":86,"wind":1.4,"windMax":4.6,"gust":8.6,"sun":0,"snow":null}
