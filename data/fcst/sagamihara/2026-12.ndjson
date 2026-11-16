@@ -1,0 +1,1 @@
+{"v":1,"id":"sagamihara|gfs_seamless|2026-11-16T00:00Z|2026-12-01","loc":"sagamihara","model":"gfs_seamless","fetched":"2026-11-16T00:00Z","target":"2026-12-01","lead":15,"tavg":12.7,"tmax":15.5,"tmin":10.3,"prcp":0,"rh":54,"wind":3.11,"sun":9.08,"code":3,"pop":0.323,"q":{"tmax":[11.9,13.7,15.2,16.7,18.7],"tmin":[6.3,7.85,9.2,10.55,11.5],"prcp":[0,0,0,3.4,20.4]},"members":31}

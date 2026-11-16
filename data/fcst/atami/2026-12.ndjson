@@ -1,0 +1,1 @@
+{"v":1,"id":"atami|gfs_seamless|2026-11-16T00:00Z|2026-12-01","loc":"atami","model":"gfs_seamless","fetched":"2026-11-16T00:00Z","target":"2026-12-01","lead":15,"tavg":13.2,"tmax":16.4,"tmin":10.4,"prcp":0,"rh":71,"wind":2.32,"sun":9,"code":3,"pop":0.355,"q":{"tmax":[11.8,13.3,15.5,16.65,17.6],"tmin":[5.6,7.05,8.5,9.75,10.6],"prcp":[0,0,0,6.7,24.2]},"members":31}
