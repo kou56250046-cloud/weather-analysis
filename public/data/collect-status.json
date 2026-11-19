@@ -1,94 +1,32 @@
 {
   "v": 1,
-  "ranAt": "2026-11-19T07:48:23+09:00",
+  "ranAt": "2026-11-19T11:11:54+09:00",
   "event": "schedule",
-  "schedule": "0 16 * * *",
-  "runId": "44414936251",
+  "schedule": "0 21 * * *",
+  "runId": "44441994627",
   "runAttempt": "1",
-  "changedCount": 47,
+  "changedCount": 5,
   "changed": [
     "M data/collect-log.ndjson",
-    " M data/fcst/atami/2026-11.ndjson",
-    " M data/fcst/atami/2026-12.ndjson",
-    " M data/fcst/kawasaki/2026-11.ndjson",
-    " M data/fcst/kawasaki/2026-12.ndjson",
-    " M data/fcst/sagamihara/2026-11.ndjson",
-    " M data/fcst/sagamihara/2026-12.ndjson",
-    " M data/fcst/setagaya/2026-11.ndjson",
-    " M data/fcst/setagaya/2026-12.ndjson",
-    " M data/hourly/atami.json",
-    " M data/hourly/kawasaki.json",
-    " M data/hourly/sagamihara.json",
-    " M data/hourly/setagaya.json",
     " M data/jma-fcst/atami/2026-11.ndjson",
     " M data/jma-fcst/kawasaki/2026-11.ndjson",
     " M data/jma-fcst/sagamihara/2026-11.ndjson",
-    " M data/jma-fcst/setagaya/2026-11.ndjson",
-    " M data/obs/atami/2026.ndjson",
-    " M data/obs/kawasaki/2026.ndjson",
-    " M data/obs/sagamihara/2026.ndjson",
-    " M data/obs/setagaya/2026.ndjson",
-    " M public/data/coef-atami.json",
-    " M public/data/coef-kawasaki.json",
-    " M public/data/coef-sagamihara.json",
-    " M public/data/coef-setagaya.json",
-    " M public/data/forecast-atami.json",
-    " M public/data/forecast-kawasaki.json",
-    " M public/data/forecast-sagamihara.json",
-    " M public/data/forecast-setagaya.json",
-    " M public/data/history-atami.json",
-    " M public/data/history-kawasaki.json",
-    " M public/data/history-sagamihara.json",
-    " M public/data/history-setagaya.json",
-    " M public/data/hourly-atami.json",
-    " M public/data/hourly-kawasaki.json",
-    " M public/data/hourly-sagamihara.json",
-    " M public/data/hourly-setagaya.json",
-    " M public/data/leakcheck.json",
-    " M public/data/meta.json",
-    " M public/data/normals-atami.json",
-    " M public/data/normals-kawasaki.json",
-    " M public/data/normals-sagamihara.json",
-    " M public/data/normals-setagaya.json",
-    " M public/data/scores-atami.json",
-    " M public/data/scores-kawasaki.json",
-    " M public/data/scores-sagamihara.json",
-    " M public/data/scores-setagaya.json"
+    " M data/jma-fcst/setagaya/2026-11.ndjson"
   ],
-  "headSha": "7ce682e",
+  "headSha": "c18c018",
   "mtimes": {
-    "public/data/meta.json": "2026-11-18T22:48:23.527Z",
-    "public/data/forecast-setagaya.json": "2026-11-18T22:48:06.234Z",
-    "public/data/hourly-setagaya.json": "2026-11-18T22:48:06.237Z",
-    "data/collect-log.ndjson": "2026-11-18T22:48:23.529Z"
+    "public/data/meta.json": "2026-11-19T02:07:42.842Z",
+    "public/data/forecast-setagaya.json": "2026-11-19T02:07:42.833Z",
+    "public/data/hourly-setagaya.json": "2026-11-19T02:07:42.842Z",
+    "data/collect-log.ndjson": "2026-11-19T02:11:53.427Z"
   },
   "lastCollect": {
-    "jma-forecast": "2026-11-19T07:47:56+09:00",
-    "observation": "2026-11-19T07:48:00+09:00",
     "derive": "2026-11-19T07:48:23+09:00",
-    "forecast": "2026-11-19T07:47:55+09:00"
+    "forecast": "2026-11-19T07:47:55+09:00",
+    "jma-forecast": "2026-11-19T11:11:53+09:00",
+    "observation": "2026-11-19T07:48:00+09:00"
   },
   "recentLog": [
-    {
-      "v": 1,
-      "id": "observation|2026-11-18T08:16:09+09:00",
-      "ts": "2026-11-18T08:16:09+09:00",
-      "job": "observation",
-      "ok": true,
-      "added": 4,
-      "errors": [],
-      "durationMs": 2728
-    },
-    {
-      "v": 1,
-      "id": "derive|2026-11-18T08:16:53+09:00",
-      "ts": "2026-11-18T08:16:53+09:00",
-      "job": "derive",
-      "ok": true,
-      "added": 4,
-      "errors": [],
-      "durationMs": 44729
-    },
     {
       "v": 1,
       "id": "forecast|2026-11-18T11:39:47+09:00",
@@ -148,6 +86,31 @@
       "added": 4,
       "errors": [],
       "durationMs": 23233
+    },
+    {
+      "v": 1,
+      "id": "forecast|2026-11-19T11:11:52+09:00",
+      "ts": "2026-11-19T11:11:52+09:00",
+      "job": "forecast",
+      "ok": false,
+      "added": 0,
+      "errors": [
+        "setagaya: TypeError: fetch failed",
+        "kawasaki: TypeError: fetch failed",
+        "sagamihara: TypeError: fetch failed",
+        "atami: TypeError: fetch failed"
+      ],
+      "durationMs": 246127
+    },
+    {
+      "v": 1,
+      "id": "jma-forecast|2026-11-19T11:11:53+09:00",
+      "ts": "2026-11-19T11:11:53+09:00",
+      "job": "jma-forecast",
+      "ok": true,
+      "added": 32,
+      "errors": [],
+      "durationMs": 1138
     }
   ]
 }
