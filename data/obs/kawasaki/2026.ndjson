@@ -327,3 +327,4 @@
 {"v":1,"id":"kawasaki|2026-11-23","loc":"kawasaki","date":"2026-11-23","src":"etrn","station":"47670","tavg":9.9,"tmax":14,"tmin":5.2,"prcp":0,"prcpMax1h":0,"rh":59,"rhMin":44,"wind":2.8,"windMax":4.2,"gust":6.6,"sun":9.2,"snow":0}
 {"v":1,"id":"kawasaki|2026-11-24","loc":"kawasaki","date":"2026-11-24","src":"etrn","station":"47670","tavg":14.8,"tmax":19,"tmin":10.1,"prcp":6.5,"prcpMax1h":4.5,"rh":72,"rhMin":54,"wind":5.9,"windMax":10.8,"gust":19,"sun":0.8,"snow":0}
 {"v":1,"id":"kawasaki|2026-11-25","loc":"kawasaki","date":"2026-11-25","src":"etrn","station":"47670","tavg":11.1,"tmax":14.7,"tmin":8.4,"prcp":0.5,"prcpMax1h":0.5,"rh":48,"rhMin":26,"wind":3.3,"windMax":7.8,"gust":11.7,"sun":9.2,"snow":0}
+{"v":1,"id":"kawasaki|2026-11-26","loc":"kawasaki","date":"2026-11-26","src":"etrn","station":"47670","tavg":10.6,"tmax":14.9,"tmin":5.8,"prcp":0,"prcpMax1h":0,"rh":59,"rhMin":45,"wind":2,"windMax":3.8,"gust":6,"sun":7.8,"snow":0}
